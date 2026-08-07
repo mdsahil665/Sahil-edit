@@ -105,7 +105,9 @@ export async function syncUserToFirestore(user: User): Promise<boolean> {
       return isRoleAdmin;
     }
   } catch (err: any) {
-    console.error('Error syncing user document to Firestore:', err?.code || 'no-code', err?.message || String(err));
+    const errCode = err?.code ? `[${err.code}] ` : '';
+    const errMsg = err?.message || String(err);
+    console.error('Error syncing user document to Firestore:', `${errCode}${errMsg}`);
     handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
     return user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
   }
