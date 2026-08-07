@@ -169,20 +169,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 export async function signInWithGoogle(): Promise<User | null> {
   googleProvider.setCustomParameters({ prompt: 'select_account' });
 
-  const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-
-  // On mobile devices, directly use redirect for seamless native browser behavior
-  if (isMobile) {
-    try {
-      await signInWithRedirect(auth, googleProvider);
-      return null;
-    } catch (redirectErr: any) {
-      console.warn('Mobile signInWithRedirect notice:', redirectErr);
-      return null;
-    }
-  }
-
-  // On desktop, try popup first with automatic fallback to redirect
   try {
     const result = await signInWithPopup(auth, googleProvider);
     if (result?.user) {
@@ -193,14 +179,24 @@ export async function signInWithGoogle(): Promise<User | null> {
   } catch (error: any) {
     console.warn('signInWithPopup notice:', error?.code || 'no-code', error?.message || error);
 
-    // Fall back to redirect if popup fails or is blocked/closed or IndexedDB issues occur
-    try {
-      await signInWithRedirect(auth, googleProvider);
-      return null;
-    } catch (redirectErr: any) {
-      console.warn('Fallback signInWithRedirect notice:', redirectErr);
+    // If popup was blocked by browser popup blocker, try redirect as fallback
+    if (error?.code === 'auth/popup-blocked') {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        return null;
+      } catch (redirectErr: any) {
+        console.warn('signInWithRedirect fallback notice:', redirectErr);
+      }
+    }
+
+    if (
+      error?.code === 'auth/popup-closed-by-user' ||
+      error?.code === 'auth/cancelled-popup-request'
+    ) {
       return null;
     }
+
+    throw error;
   }
 }
 
