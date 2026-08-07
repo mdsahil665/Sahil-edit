@@ -11,15 +11,28 @@ import {
 import { getFirestore, doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
 import appletConfig from '../../firebase-applet-config.json';
 
-// Firebase configuration with fallback to embedded project credentials
-const metaEnv = (import.meta as any).env || {};
+// Firebase configuration prioritizing VITE_FIREBASE_* environment variables with fallback to project config
+const getEnvVar = (key: string, fallback: string): string => {
+  try {
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env[key]) {
+      return (import.meta as any).env[key];
+    }
+    if (typeof process !== 'undefined' && process.env && process.env[key]) {
+      return process.env[key] as string;
+    }
+  } catch (e) {
+    // ignore lookup error
+  }
+  return fallback;
+};
+
 const firebaseConfig = {
-  apiKey: (metaEnv.VITE_FIREBASE_API_KEY as string) || appletConfig.apiKey,
-  authDomain: (metaEnv.VITE_FIREBASE_AUTH_DOMAIN as string) || appletConfig.authDomain,
-  projectId: (metaEnv.VITE_FIREBASE_PROJECT_ID as string) || appletConfig.projectId,
-  storageBucket: (metaEnv.VITE_FIREBASE_STORAGE_BUCKET as string) || appletConfig.storageBucket,
-  messagingSenderId: (metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID as string) || appletConfig.messagingSenderId,
-  appId: (metaEnv.VITE_FIREBASE_APP_ID as string) || appletConfig.appId,
+  apiKey: getEnvVar('VITE_FIREBASE_API_KEY', appletConfig.apiKey),
+  authDomain: getEnvVar('VITE_FIREBASE_AUTH_DOMAIN', appletConfig.authDomain),
+  projectId: getEnvVar('VITE_FIREBASE_PROJECT_ID', appletConfig.projectId),
+  storageBucket: getEnvVar('VITE_FIREBASE_STORAGE_BUCKET', appletConfig.storageBucket),
+  messagingSenderId: getEnvVar('VITE_FIREBASE_MESSAGING_SENDER_ID', appletConfig.messagingSenderId),
+  appId: getEnvVar('VITE_FIREBASE_APP_ID', appletConfig.appId),
 };
 
 const databaseId = appletConfig.firestoreDatabaseId || '(default)';
