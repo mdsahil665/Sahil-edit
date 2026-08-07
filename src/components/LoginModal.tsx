@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, ShieldCheck, KeyRound, ArrowRight, X, LogIn, UserPlus, Sparkles, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth, ADMIN_EMAIL } from '../context/AuthContext';
@@ -26,8 +26,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { loginWithEmail, registerWithEmail, loginWithGoogle } = useAuth();
+  const { currentUser, loginWithEmail, registerWithEmail, loginWithGoogle } = useAuth();
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (currentUser && isOpen) {
+      const isAdminUser = currentUser.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() || promptStore.isAdminLoggedIn();
+      onLoginSuccess(isAdminUser);
+      onClose();
+    }
+  }, [currentUser, isOpen]);
 
   if (!isOpen) return null;
 
