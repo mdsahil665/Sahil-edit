@@ -45,9 +45,10 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         onLoginSuccess();
       }
     } catch (err: any) {
-      const code = err?.code || '';
+      console.error('Google Sign-In Error in Admin Modal:', err?.code || 'no-code', err?.message || err, err);
+      const code = err?.code || 'auth/unknown';
       const message = err?.message || String(err);
-      const msg = code ? `[${code}] ${message}` : message;
+      const msg = `[${code}] ${message}`;
       showToast('Google Sign-In Error', msg, 'error');
     } finally {
       setLoadingGoogle(false);

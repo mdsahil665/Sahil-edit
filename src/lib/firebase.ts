@@ -144,16 +144,17 @@ export async function signInWithGoogle(): Promise<User | null> {
     }
     return result?.user || null;
   } catch (error: any) {
+    console.error('Error signing in with Google:', error?.code || 'no-code', error?.message || error, error);
     // Fall back to redirect if popup is blocked
     if (error?.code === 'auth/popup-blocked') {
       try {
         await signInWithRedirect(auth, googleProvider);
         return null;
-      } catch (redirectErr) {
+      } catch (redirectErr: any) {
+        console.error('Error during signInWithRedirect fallback:', redirectErr?.code || 'no-code', redirectErr?.message || redirectErr, redirectErr);
         throw redirectErr;
       }
     }
-    console.error('Error signing in with Google:', error);
     throw error;
   }
 }
