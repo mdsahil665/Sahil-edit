@@ -183,7 +183,7 @@ VITE_ADMIN_PASSCODE=sahil2026
               <strong className="text-zinc-900 dark:text-white">Enable Firestore Database:</strong> Click <em>Firestore Database</em> &gt; <em>Create Database</em> in <strong>Production Mode</strong>.
             </li>
             <li>
-              <strong className="text-zinc-900 dark:text-white">Enable Authentication:</strong> Go to <em>Authentication</em> &gt; <em>Sign-in method</em> and enable <strong>Email/Password</strong> and <strong>Anonymous / Google</strong> logins.
+              <strong className="text-zinc-900 dark:text-white">Enable Authentication & Authorized Domains:</strong> Go to <em>Authentication</em> &gt; <em>Sign-in method</em> and enable <strong>Google</strong> and <strong>Email/Password</strong> logins. Under <em>Authentication</em> &gt; <em>Settings</em> &gt; <em>Authorized domains</em>, add your production domain (e.g. <code className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">sahil-edit.vercel.app</code>).
             </li>
             <li>
               <strong className="text-zinc-900 dark:text-white">Deploy Firestore Security Rules:</strong> Copy the hardened security rules from <code className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">firestore.rules</code> into the Firebase Console Rules tab.
