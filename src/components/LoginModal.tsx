@@ -32,10 +32,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   if (!isOpen) return null;
 
   const formatFirebaseError = (err: any): string => {
-    if (!err) return 'An unknown error occurred.';
-    const code = err.code || 'auth/unknown-error';
-    const message = err.message || String(err);
-    return `[${code}] ${message}`;
+    if (!err) return 'An error occurred during authentication.';
+    const code = err?.code ? `[${err.code}] ` : '';
+    const message = err?.message || String(err);
+    return `${code}${message}`;
   };
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
