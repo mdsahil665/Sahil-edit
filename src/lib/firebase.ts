@@ -24,6 +24,16 @@ const firebaseConfig = {
 
 const databaseId = appletConfig.firestoreDatabaseId || '(default)';
 
+console.log('[Firebase Init Info]', {
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  storageBucket: firebaseConfig.storageBucket,
+  databaseId,
+  hasApiKey: Boolean(firebaseConfig.apiKey),
+  hasAppId: Boolean(firebaseConfig.appId),
+  locationOrigin: typeof window !== 'undefined' ? window.location.origin : 'server',
+});
+
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, databaseId);
 export const auth = getAuth(app);
