@@ -45,7 +45,16 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
         onLoginSuccess();
       }
     } catch (err: any) {
-      console.error('Google Sign-In Error in Admin Modal:', err?.code || 'no-code', err?.message || err, err);
+      console.warn('Google Sign-In notice in Admin Modal:', err?.code || 'no-code', err?.message || err);
+      const errStr = String(err?.message || err || '');
+      if (
+        err?.code === 'auth/popup-closed-by-user' ||
+        err?.code === 'auth/cancelled-popup-request' ||
+        errStr.includes('closing') ||
+        errStr.includes('hidden')
+      ) {
+        return;
+      }
       const code = err?.code ? `[${err.code}] ` : '';
       const message = err?.message || String(err);
       showToast('Google Sign-In Error', `${code}${message}`, 'error');

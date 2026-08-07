@@ -6,6 +6,8 @@ import {
   signInWithRedirect,
   getRedirectResult,
   signOut,
+  setPersistence,
+  browserLocalPersistence,
   User,
 } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
@@ -50,6 +52,16 @@ console.log('[Firebase Init Info]', {
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const db = getFirestore(app, databaseId);
 export const auth = getAuth(app);
+
+// Enable browserLocalPersistence to avoid IndexedDB closing/hidden issues on mobile browsers
+try {
+  setPersistence(auth, browserLocalPersistence).catch((pErr) => {
+    console.warn('Firebase setPersistence notice:', pErr);
+  });
+} catch (pErr) {
+  console.warn('Firebase setPersistence catch notice:', pErr);
+}
+
 export const googleProvider = new GoogleAuthProvider();
 
 export const ADMIN_EMAIL = 'mdsahil012002@gmail.com';
@@ -102,7 +114,7 @@ export async function syncUserToFirestore(user: User): Promise<boolean> {
   } catch (err: any) {
     const errCode = err?.code ? `[${err.code}] ` : '';
     const errMsg = err?.message || String(err);
-    console.error('Firestore user sync notice:', `${errCode}${errMsg}`);
+    console.warn('Firestore user sync notice:', `${errCode}${errMsg}`);
     return user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
   }
 }
@@ -155,8 +167,23 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 }
 
 export async function signInWithGoogle(): Promise<User | null> {
+  googleProvider.setCustomParameters({ prompt: 'select_account' });
+
+  const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+
+  // On mobile devices, directly use redirect for seamless native browser behavior
+  if (isMobile) {
+    try {
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    } catch (redirectErr: any) {
+      console.warn('Mobile signInWithRedirect notice:', redirectErr);
+      return null;
+    }
+  }
+
+  // On desktop, try popup first with automatic fallback to redirect
   try {
-    googleProvider.setCustomParameters({ prompt: 'select_account' });
     const result = await signInWithPopup(auth, googleProvider);
     if (result?.user) {
       await syncUserToFirestore(result.user);
@@ -164,25 +191,16 @@ export async function signInWithGoogle(): Promise<User | null> {
     }
     return null;
   } catch (error: any) {
-    console.error('signInWithPopup error:', error?.code || 'no-code', error?.message || error);
+    console.warn('signInWithPopup notice:', error?.code || 'no-code', error?.message || error);
 
-    // Fall back to redirect if popup is blocked or closed/cancelled
-    const isPopupError =
-      error?.code === 'auth/popup-blocked' ||
-      error?.code === 'auth/popup-closed-by-user' ||
-      error?.code === 'auth/cancelled-popup-request';
-
-    if (isPopupError) {
-      console.log('Falling back to signInWithRedirect...');
-      try {
-        await signInWithRedirect(auth, googleProvider);
-        return null;
-      } catch (redirectErr: any) {
-        console.error('signInWithRedirect error:', redirectErr?.code || 'no-code', redirectErr?.message || redirectErr);
-        throw redirectErr;
-      }
+    // Fall back to redirect if popup fails or is blocked/closed or IndexedDB issues occur
+    try {
+      await signInWithRedirect(auth, googleProvider);
+      return null;
+    } catch (redirectErr: any) {
+      console.warn('Fallback signInWithRedirect notice:', redirectErr);
+      return null;
     }
-    throw error;
   }
 }
 
@@ -196,3 +214,4 @@ export async function logOut(): Promise<void> {
     throw error;
   }
 }
+

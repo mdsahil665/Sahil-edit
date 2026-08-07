@@ -101,7 +101,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         onClose();
       }
     } catch (err: any) {
-      console.error('Google Sign-In Error Code:', err?.code, 'Message:', err?.message, err);
+      console.warn('Google Sign-In notice:', err?.code, err?.message, err);
+      const errStr = String(err?.message || err || '');
+      if (
+        err?.code === 'auth/popup-closed-by-user' ||
+        err?.code === 'auth/cancelled-popup-request' ||
+        errStr.includes('closing') ||
+        errStr.includes('hidden')
+      ) {
+        return;
+      }
       const msg = formatFirebaseError(err);
       setErrorMsg(msg);
       showToast('Google Sign-In Error', msg, 'error');
