@@ -32,9 +32,13 @@ export const googleProvider = new GoogleAuthProvider();
 export const ADMIN_EMAIL = 'mdsahil012002@gmail.com';
 
 export async function testConnection() {
-  return await getDocFromServer(doc(db, 'test', 'connection'));
+  try {
+    return await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (err: any) {
+    console.warn('Firestore test connection notice:', err?.message || err);
+  }
 }
-testConnection().catch(() => {});
+testConnection();
 
 export async function syncUserToFirestore(user: User): Promise<boolean> {
   if (!user || !user.uid) return false;
@@ -77,8 +81,9 @@ export async function syncUserToFirestore(user: User): Promise<boolean> {
       );
       return isRoleAdmin;
     }
-  } catch (err) {
-    console.error('Error syncing user document to Firestore:', err);
+  } catch (err: any) {
+    console.error('Error syncing user document to Firestore:', err?.code || 'no-code', err?.message || String(err));
+    handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
     return user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
   }
 }
