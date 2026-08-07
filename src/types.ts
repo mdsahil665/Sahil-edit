@@ -1,0 +1,402 @@
+export type CategoryId = string;
+
+export interface Category {
+  id: CategoryId;
+  name: string;
+  slug: string;
+  icon: string; // Lucide icon name
+  color: string; // Tailwind color class or hex
+  bgLight: string;
+  description: string;
+  count?: number;
+}
+
+export type PostStatus = 'published' | 'draft' | 'scheduled';
+
+export interface PostTimerOverride {
+  enabled: boolean;
+  seconds?: number;
+}
+
+export interface PromptPost {
+  id: string;
+  title: string;
+  shortDescription: string;
+  fullPrompt: string;
+  categoryId: CategoryId;
+  categoryName?: string;
+  tags: string[];
+  imageUrl: string;
+  views: number;
+  copies: number;
+  featured: boolean;
+  trending: boolean;
+  status: PostStatus;
+  scheduledDate?: string;
+  createdAt: string;
+  updatedAt: string;
+  seoTitle?: string;
+  metaDescription?: string;
+  pinned?: boolean;
+  timerOverride?: PostTimerOverride;
+}
+
+export interface AdminStats {
+  totalPosts: number;
+  totalCategories: number;
+  totalPages: number;
+  totalViews: number;
+  totalCopies: number;
+  draftCount: number;
+  scheduledCount: number;
+}
+
+export interface RecentActivity {
+  id: string;
+  type:
+    | 'create_post'
+    | 'edit_post'
+    | 'delete_post'
+    | 'create_category'
+    | 'copy_prompt'
+    | 'create_page'
+    | 'edit_page'
+    | 'delete_page'
+    | 'update_settings'
+    | 'backup_restore';
+  message: string;
+  timestamp: string;
+}
+
+export type SortOption = 'newest' | 'popular' | 'trending' | 'alphabetical';
+
+// --- MONETIZATION TYPES ---
+export type AdNetworkId = 'adsense' | 'monetag' | 'propeller' | 'adsterra' | 'medianet' | 'custom';
+
+export interface AdNetworkConfig {
+  id: AdNetworkId;
+  name: string;
+  publisherId: string; // Publisher ID or Zone ID
+  scriptCode: string;  // Script Code or Embed HTML
+  enabled: boolean;
+}
+
+export interface AdPositions {
+  topBanner: boolean;
+  bottomBanner: boolean;
+  homepageBanner: boolean;
+  betweenPosts: boolean;
+  insidePostTop: boolean;
+  insidePrompt: boolean;
+  belowPrompt: boolean;
+  beforeCopyButton: boolean;
+  afterCopyButton: boolean;
+  stickyBottomBanner: boolean;
+  desktopSidebar: boolean;
+  footerBanner: boolean;
+}
+
+export interface EarningsData {
+  estimatedEarnings: number | null;
+  todayRevenue: number | null;
+  yesterdayRevenue: number | null;
+  thisMonthRevenue: number | null;
+  impressions: number | null;
+  clicks: number | null;
+  ctr: number | null;
+  rpm: number | null;
+  fillRate: number | null;
+}
+
+export interface MonetizationSettings {
+  publisherId: string;
+  enabled: boolean;
+  testMode: boolean;
+  activeNetwork: AdNetworkId;
+  positions: AdPositions;
+  adFrequency: number; // Show ad after N posts (default 3)
+  networks: Record<AdNetworkId, AdNetworkConfig>;
+}
+
+// --- TIMER TYPES ---
+export interface TimerSettings {
+  enabled: boolean;
+  defaultSeconds: number; // Default 5 seconds
+}
+
+// --- PAGES TYPES ---
+export interface CustomPage {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  seoTitle?: string;
+  metaDescription?: string;
+  featuredImage?: string;
+  status: 'published' | 'draft';
+  isSystem?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- SEO TYPES ---
+export interface SeoSettings {
+  websiteTitle: string;
+  metaDescription: string;
+  keywords: string;
+  canonicalUrl: string;
+  ogImage: string;
+  twitterCard: 'summary' | 'summary_large_image';
+  robotsTxt: string;
+  authorName: string;
+}
+
+// --- SECURITY TYPES ---
+export interface SecuritySettings {
+  sessionTimeoutMinutes: number;
+  twoFactorEnabled: boolean;
+  rateLimitMaxAttempts: number;
+  autoLogoutOnInactivity: boolean;
+}
+
+// --- WEBSITE SETTINGS ---
+export interface SocialMediaLinks {
+  instagram: string;
+  facebook: string;
+  whatsapp: string;
+  telegram: string;
+  youtube: string;
+  twitter: string;
+  github: string;
+}
+
+export interface WebsiteSettings {
+  websiteName: string;
+  tagline: string;
+  websiteLogo: string;
+  favicon: string;
+  homepageTitle: string;
+  homepageSubtitle: string;
+  footerText: string;
+  primaryColor: string;
+  accentColor: string;
+  darkModeDefault: boolean;
+  socialLinks: SocialMediaLinks;
+  contactEmail: string;
+  contactPhone: string;
+  contactAddress: string;
+  googleAnalyticsId: string;
+  customCss: string;
+  customJs: string;
+  headerCode: string;
+  footerCode: string;
+}
+
+// --- CLOUDINARY SETTINGS ---
+export interface CloudinarySettings {
+  cloudName: string;
+  uploadPreset: string;
+  apiKey: string;
+  apiSecret?: string;
+  folder: string;
+}
+
+// --- COMMENTS SETTINGS ---
+export interface CommentsSettings {
+  enabled: boolean;
+  autoApprove: boolean;
+  spamProtection: boolean;
+  requireEmail: boolean;
+}
+
+export interface CommentItem {
+  id: string;
+  postId: string;
+  postTitle?: string;
+  authorName: string;
+  authorEmail: string;
+  content: string;
+  status: 'approved' | 'pending' | 'spam';
+  createdAt: string;
+}
+
+// --- NOTIFICATION TYPES ---
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: 'post' | 'backup' | 'storage' | 'firebase' | 'cloudinary' | 'info';
+  read: boolean;
+  timestamp: string;
+}
+
+// --- FEATURE CONTROLS TYPES ---
+export interface FeatureControls {
+  // GENERAL
+  maintenanceMode: boolean;
+  darkMode: boolean;
+  searchBar: boolean;
+  homepageBanner: boolean;
+  latestPostsSection: boolean;
+  infiniteScroll: boolean;
+  loadMoreButton: boolean;
+  footer: boolean;
+  backToTopButton: boolean;
+  socialShareButtons: boolean;
+  copyButton: boolean;
+  downloadImageButton: boolean;
+  viewCounter: boolean;
+  copyCounter: boolean;
+  relatedPosts: boolean;
+  featuredPosts: boolean;
+  trendingPosts: boolean;
+  categories: boolean;
+  comments: boolean;
+  userLogin: boolean;
+  userRegistration: boolean;
+  profilePage: boolean;
+  favorites: boolean;
+  notifications: boolean;
+
+  // SOCIAL MEDIA
+  footerSocialLinks: boolean;
+  instagramToggle: boolean;
+  facebookToggle: boolean;
+  twitterToggle: boolean;
+  whatsappToggle: boolean;
+  telegramToggle: boolean;
+  youtubeToggle: boolean;
+  githubToggle: boolean;
+
+  // POST FEATURES
+  imageUpload: boolean;
+  imageUrl: boolean;
+  timerLock: boolean;
+  promptVisibility: boolean;
+  promptCopy: boolean;
+  promptDownload: boolean;
+  autoPublish: boolean;
+  draftSystem: boolean;
+  schedulePost: boolean;
+
+  // MONETIZATION
+  masterAdsSwitch: boolean;
+  googleAdSense: boolean;
+  monetag: boolean;
+  propellerAds: boolean;
+  adsterra: boolean;
+  mediaNet: boolean;
+  customAds: boolean;
+  topBannerAd: boolean;
+  bottomBannerAd: boolean;
+  inFeedAds: boolean;
+  insidePostAds: boolean;
+  stickyAds: boolean;
+
+  // SEO
+  sitemap: boolean;
+  robotsTxt: boolean;
+  openGraph: boolean;
+  schemaMarkup: boolean;
+  metaTags: boolean;
+
+  // SECURITY
+  firebaseAuth: boolean;
+  adminLogin: boolean;
+  rateLimiting: boolean;
+  activityLogs: boolean;
+  cloudinaryUpload: boolean;
+  backupSystem: boolean;
+
+  // ADVANCED
+  developerMode: boolean;
+  debugMode: boolean;
+  cacheControl: boolean;
+  performanceMode: boolean;
+}
+
+export const DEFAULT_FEATURE_CONTROLS: FeatureControls = {
+  // GENERAL
+  maintenanceMode: false,
+  darkMode: true,
+  searchBar: true,
+  homepageBanner: true,
+  latestPostsSection: true,
+  infiniteScroll: true,
+  loadMoreButton: true,
+  footer: true,
+  backToTopButton: true,
+  socialShareButtons: true,
+  copyButton: true,
+  downloadImageButton: true,
+  viewCounter: true,
+  copyCounter: true,
+  relatedPosts: true,
+  featuredPosts: true,
+  trendingPosts: true,
+  categories: true,
+  comments: true,
+  userLogin: true,
+  userRegistration: true,
+  profilePage: true,
+  favorites: true,
+  notifications: true,
+
+  // SOCIAL MEDIA
+  footerSocialLinks: true,
+  instagramToggle: true,
+  facebookToggle: true,
+  twitterToggle: true,
+  whatsappToggle: true,
+  telegramToggle: true,
+  youtubeToggle: true,
+  githubToggle: true,
+
+  // POST FEATURES
+  imageUpload: true,
+  imageUrl: true,
+  timerLock: true,
+  promptVisibility: true,
+  promptCopy: true,
+  promptDownload: true,
+  autoPublish: true,
+  draftSystem: true,
+  schedulePost: true,
+
+  // MONETIZATION
+  masterAdsSwitch: true,
+  googleAdSense: true,
+  monetag: true,
+  propellerAds: true,
+  adsterra: true,
+  mediaNet: true,
+  customAds: true,
+  topBannerAd: true,
+  bottomBannerAd: true,
+  inFeedAds: true,
+  insidePostAds: true,
+  stickyAds: true,
+
+  // SEO
+  sitemap: true,
+  robotsTxt: true,
+  openGraph: true,
+  schemaMarkup: true,
+  metaTags: true,
+
+  // SECURITY
+  firebaseAuth: true,
+  adminLogin: true,
+  rateLimiting: true,
+  activityLogs: true,
+  cloudinaryUpload: true,
+  backupSystem: true,
+
+  // ADVANCED
+  developerMode: false,
+  debugMode: false,
+  cacheControl: true,
+  performanceMode: true,
+};
+
+
