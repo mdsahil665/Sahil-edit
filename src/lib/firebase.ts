@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getAuth,
   GoogleAuthProvider,
@@ -47,7 +47,7 @@ console.log('[Firebase Init Info]', {
   locationOrigin: typeof window !== 'undefined' ? window.location.origin : 'server',
 });
 
-const app = initializeApp(firebaseConfig);
+export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const db = getFirestore(app, databaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
@@ -67,48 +67,42 @@ export async function syncUserToFirestore(user: User): Promise<boolean> {
   if (!user || !user.uid) return false;
   try {
     const userRef = doc(db, 'users', user.uid);
-    const userSnap = await getDoc(userRef);
     const userEmail = user.email?.toLowerCase() || '';
     const isAdminUser = userEmail === ADMIN_EMAIL.toLowerCase();
-
     const now = new Date().toISOString();
 
-    if (!userSnap.exists()) {
-      await setDoc(
-        userRef,
-        {
-          uid: user.uid,
-          email: user.email || '',
-          displayName: user.displayName || user.email?.split('@')[0] || 'User',
-          photoURL: user.photoURL || '',
-          role: isAdminUser ? 'admin' : 'user',
-          createdAt: now,
-          lastLoginAt: now,
-        },
-        { merge: true }
-      );
-      return isAdminUser;
-    } else {
-      const existingData = userSnap.data();
-      const isRoleAdmin = existingData?.role === 'admin' || isAdminUser;
-      await setDoc(
-        userRef,
-        {
-          email: user.email || existingData?.email || '',
-          displayName: user.displayName || existingData?.displayName || user.email?.split('@')[0] || 'User',
-          photoURL: user.photoURL || existingData?.photoURL || '',
-          role: isRoleAdmin ? 'admin' : 'user',
-          lastLoginAt: now,
-        },
-        { merge: true }
-      );
-      return isRoleAdmin;
+    let isRoleAdmin = isAdminUser;
+    try {
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        if (data?.role === 'admin') {
+          isRoleAdmin = true;
+        }
+      }
+    } catch (readErr) {
+      console.warn('Firestore read user doc notice:', readErr);
     }
+
+    await setDoc(
+      userRef,
+      {
+        uid: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || user.email?.split('@')[0] || 'User',
+        photoURL: user.photoURL || '',
+        role: isRoleAdmin ? 'admin' : 'user',
+        lastLoginAt: now,
+        updatedAt: now,
+      },
+      { merge: true }
+    );
+
+    return isRoleAdmin;
   } catch (err: any) {
     const errCode = err?.code ? `[${err.code}] ` : '';
     const errMsg = err?.message || String(err);
-    console.error('Error syncing user document to Firestore:', `${errCode}${errMsg}`);
-    handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+    console.error('Firestore user sync notice:', `${errCode}${errMsg}`);
     return user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
   }
 }
@@ -166,17 +160,25 @@ export async function signInWithGoogle(): Promise<User | null> {
     const result = await signInWithPopup(auth, googleProvider);
     if (result?.user) {
       await syncUserToFirestore(result.user);
+      return result.user;
     }
-    return result?.user || null;
+    return null;
   } catch (error: any) {
-    console.error('Error signing in with Google:', error?.code || 'no-code', error?.message || error, error);
-    // Fall back to redirect if popup is blocked
-    if (error?.code === 'auth/popup-blocked') {
+    console.error('signInWithPopup error:', error?.code || 'no-code', error?.message || error);
+
+    // Fall back to redirect if popup is blocked or closed/cancelled
+    const isPopupError =
+      error?.code === 'auth/popup-blocked' ||
+      error?.code === 'auth/popup-closed-by-user' ||
+      error?.code === 'auth/cancelled-popup-request';
+
+    if (isPopupError) {
+      console.log('Falling back to signInWithRedirect...');
       try {
         await signInWithRedirect(auth, googleProvider);
         return null;
       } catch (redirectErr: any) {
-        console.error('Error during signInWithRedirect fallback:', redirectErr?.code || 'no-code', redirectErr?.message || redirectErr, redirectErr);
+        console.error('signInWithRedirect error:', redirectErr?.code || 'no-code', redirectErr?.message || redirectErr);
         throw redirectErr;
       }
     }

@@ -160,11 +160,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   setMode('login');
                   setErrorMsg('');
                 }}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  mode === 'login'
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${mode === 'login'
                     ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 <LogIn className="w-3.5 h-3.5" />
                 <span>Sign In</span>
@@ -176,11 +175,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   setMode('register');
                   setErrorMsg('');
                 }}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                  mode === 'register'
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${mode === 'register'
                     ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 <UserPlus className="w-3.5 h-3.5" />
                 <span>Create Account</span>

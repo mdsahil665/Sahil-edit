@@ -55,7 +55,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       })
       .catch((err: any) => {
-        console.error('Redirect Sign-In error check:', err?.code || 'no-code', err?.message || err);
+        if (err?.code !== 'auth/popup-closed-by-user') {
+          console.error('Redirect Sign-In result error:', err?.code || 'no-code', err?.message || err);
+        }
       });
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
