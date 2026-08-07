@@ -48,12 +48,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
       console.error('Google Sign-In Error in Admin Modal:', err?.code || 'no-code', err?.message || err, err);
       const code = err?.code ? `[${err.code}] ` : '';
       const message = err?.message || String(err);
-      let msg = `${code}${message}`;
-      if (err?.code === 'auth/unauthorized-domain') {
-        const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
-        msg += ` (Fix: Add "${currentDomain}" to Firebase Console > Authentication > Settings > Authorized domains)`;
-      }
-      showToast('Google Sign-In Error', msg, 'error');
+      showToast('Google Sign-In Error', `${code}${message}`, 'error');
     } finally {
       setLoadingGoogle(false);
     }

@@ -35,10 +35,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     if (!err) return 'An error occurred during authentication.';
     const code = err?.code ? `[${err.code}] ` : '';
     const message = err?.message || String(err);
-    if (err?.code === 'auth/unauthorized-domain') {
-      const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'your domain';
-      return `${code}${message} (Fix: Add "${currentDomain}" to Firebase Console > Authentication > Settings > Authorized domains)`;
-    }
     return `${code}${message}`;
   };
 
