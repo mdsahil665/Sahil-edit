@@ -54,8 +54,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await syncUserToFirestore(result.user);
         }
       })
-      .catch((err) => {
-        console.error('Redirect Sign-In error check:', err);
+      .catch((err: any) => {
+        console.error('Redirect Sign-In error check:', err?.code || 'no-code', err?.message || err);
       });
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

@@ -104,6 +104,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         onClose();
       }
     } catch (err: any) {
+      console.error('Google Sign-In Error Code:', err?.code, 'Message:', err?.message, err);
       const msg = formatFirebaseError(err);
       setErrorMsg(msg);
       showToast('Google Sign-In Error', msg, 'error');
