@@ -32,7 +32,6 @@ import {
   Sliders,
   ShieldAlert,
   Key,
-  KeyRound,
   Settings,
   MessageSquare,
   Bell,
@@ -193,7 +192,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [timerSettings, setTimerSettings] = useState(promptStore.getTimerSettings());
   const [seoSettings, setSeoSettings] = useState(promptStore.getSeoSettings());
   const [securitySettings, setSecuritySettings] = useState(promptStore.getSecuritySettings());
-  const [newPasscode, setNewPasscode] = useState('');
 
   const [websiteSettings, setWebsiteSettings] = useState(promptStore.getWebsiteSettings());
   const [cloudinarySettings, setCloudinarySettings] = useState(promptStore.getCloudinarySettings());
@@ -352,13 +350,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleSaveSecuritySettings = () => {
     promptStore.updateSecuritySettings(securitySettings);
-    if (newPasscode.trim()) {
-      promptStore.setAdminPasscode(newPasscode.trim());
-      setNewPasscode('');
-      showToast('✓ Admin Password Changed', 'New passcode is active');
-    } else {
-      showToast('✓ Security Settings Saved', 'Session timeout & auth rules updated');
-    }
+    showToast('✓ Security Settings Saved', 'Session timeout & auth rules updated');
   };
 
   // Custom Page Builder Handlers
@@ -1882,30 +1874,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-1">
               <span className="text-[10px] font-bold uppercase text-zinc-500">Hidden Admin Trigger</span>
               <p className="text-xs font-bold text-amber-400 font-mono">?admin or Ctrl+Shift+A</p>
-            </div>
-          </div>
-
-          {/* Admin Passcode Update */}
-          <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-2">
-              <KeyRound className="w-4 h-4 text-indigo-400" />
-              <span>Change Admin Passcode</span>
-            </h4>
-            <div className="flex items-center gap-3">
-              <input
-                type="password"
-                value={newPasscode}
-                onChange={(e) => setNewPasscode(e.target.value)}
-                placeholder="Enter new strong passcode..."
-                className="px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white w-full sm:w-80"
-              />
-              <button
-                type="button"
-                onClick={handleSaveSecuritySettings}
-                className="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold"
-              >
-                Update Passcode
-              </button>
             </div>
           </div>
         </div>
