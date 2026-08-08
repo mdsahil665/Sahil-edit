@@ -8,6 +8,7 @@ import {
   signOut,
   setPersistence,
   browserLocalPersistence,
+  sendPasswordResetEmail,
   User,
 } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
@@ -208,6 +209,18 @@ export async function logOut(): Promise<void> {
   } catch (error) {
     console.error('Error signing out:', error);
     throw error;
+  }
+}
+
+export async function sendAdminPasswordReset(email: string): Promise<void> {
+  const trimmed = email.trim().toLowerCase();
+  if (trimmed !== ADMIN_EMAIL.toLowerCase()) {
+    throw new Error('Admin account not found.');
+  }
+  try {
+    await sendPasswordResetEmail(auth, trimmed);
+  } catch (err: any) {
+    throw new Error('Admin account not found.');
   }
 }
 

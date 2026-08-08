@@ -28,7 +28,7 @@ VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
 VITE_CLOUDINARY_API_KEY=your_cloudinary_api_key
 
 # Admin Master Access
-VITE_ADMIN_PASSCODE=sahil2026
+VITE_ADMIN_PASSCODE=your_admin_passcode
 `;
 
   const vercelBuildSettings = `{
