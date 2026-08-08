@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Search,
   Sparkles,
+  Flame,
   Layers,
   Activity,
   Download,
@@ -292,10 +293,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showToast('Prompt Duplicated', 'New copy created');
   };
 
-  const handleToggleFeature = (post: PromptPost) => {
-    promptStore.updatePost(post.id, { featured: !post.featured });
+  const currentFeaturedPost = posts.find((p) => p.featured === true);
+  const currentTrendingPost = posts.find((p) => p.trending === true);
+
+  const handleSetFeatured = async (post: PromptPost) => {
+    if (currentFeaturedPost && currentFeaturedPost.id !== post.id) {
+      const confirm = window.confirm(
+        `Replace the current Featured Post ("${currentFeaturedPost.title}") with "${post.title}"?`
+      );
+      if (!confirm) return;
+    }
+    await promptStore.setFeaturedPost(post.id);
     onRefreshData();
-    showToast('Featured Status Updated', post.title);
+    showToast('✓ Featured Post Updated', `"${post.title}" is now the Featured Post.`);
+  };
+
+  const handleRemoveFeatured = async (post: PromptPost) => {
+    await promptStore.removeFeaturedPost(post.id);
+    onRefreshData();
+    showToast('✓ Featured Status Removed', `"${post.title}" is no longer featured.`);
+  };
+
+  const handleSetTrending = async (post: PromptPost) => {
+    if (currentTrendingPost && currentTrendingPost.id !== post.id) {
+      const confirm = window.confirm(
+        `Replace the current Trending Post ("${currentTrendingPost.title}") with "${post.title}"?`
+      );
+      if (!confirm) return;
+    }
+    await promptStore.setTrendingPost(post.id);
+    onRefreshData();
+    showToast('✓ Trending Post Updated', `"${post.title}" is now the Trending Post.`);
+  };
+
+  const handleRemoveTrending = async (post: PromptPost) => {
+    await promptStore.removeTrendingPost(post.id);
+    onRefreshData();
+    showToast('✓ Trending Status Removed', `"${post.title}" is no longer trending.`);
   };
 
   const handleDeleteCategory = (id: string, name: string) => {
@@ -779,6 +813,99 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* TAB 1: PROMPTS TABLE */}
       {activeTab === 'posts' && (
         <div className="space-y-4">
+          {/* Permanent Featured & Trending Management Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Featured Post Card */}
+            <div className="p-4 rounded-2xl bg-zinc-900/80 border border-blue-500/30 flex flex-col justify-between space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-400" />
+                  <h3 className="font-bold text-xs sm:text-sm text-white">Current Featured Post</h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-extrabold uppercase">
+                  Fixed 1 Active
+                </span>
+              </div>
+
+              {currentFeaturedPost ? (
+                <div className="flex items-center gap-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                  <img
+                    src={currentFeaturedPost.imageUrl}
+                    alt={currentFeaturedPost.title}
+                    className="w-12 h-12 rounded-lg object-contain bg-zinc-900 p-0.5 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-xs text-white truncate">{currentFeaturedPost.title}</p>
+                    <p className="text-[11px] text-zinc-400 truncate">{currentFeaturedPost.shortDescription}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => handleRemoveFeatured(currentFeaturedPost)}
+                      className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition-colors"
+                    >
+                      Remove
+                    </button>
+                    <button
+                      onClick={() => onEditPost(currentFeaturedPost)}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-500 text-center">
+                  No Featured Post currently active. Click "Set Featured" on any post below.
+                </div>
+              )}
+            </div>
+
+            {/* Trending Post Card */}
+            <div className="p-4 rounded-2xl bg-zinc-900/80 border border-amber-500/30 flex flex-col justify-between space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-amber-400" />
+                  <h3 className="font-bold text-xs sm:text-sm text-white">Current Trending Post</h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-extrabold uppercase">
+                  Fixed 1 Active
+                </span>
+              </div>
+
+              {currentTrendingPost ? (
+                <div className="flex items-center gap-3 bg-zinc-950 p-3 rounded-xl border border-zinc-800">
+                  <img
+                    src={currentTrendingPost.imageUrl}
+                    alt={currentTrendingPost.title}
+                    className="w-12 h-12 rounded-lg object-contain bg-zinc-900 p-0.5 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-xs text-white truncate">{currentTrendingPost.title}</p>
+                    <p className="text-[11px] text-zinc-400 truncate">{currentTrendingPost.shortDescription}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => handleRemoveTrending(currentTrendingPost)}
+                      className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition-colors"
+                    >
+                      Remove
+                    </button>
+                    <button
+                      onClick={() => onEditPost(currentTrendingPost)}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-500 text-center">
+                  No Trending Post currently active. Click "Set Trending" on any post below.
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-zinc-900/60 border border-zinc-800">
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -890,7 +1017,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 className="w-10 h-10 rounded-xl object-contain bg-zinc-800 p-0.5 flex-shrink-0"
                               />
                               <div className="min-w-0">
-                                <p className="font-bold text-white truncate">{post.title}</p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="font-bold text-white truncate">{post.title}</p>
+                                  {post.featured && (
+                                    <span className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold shrink-0">
+                                      Featured
+                                    </span>
+                                  )}
+                                  {post.trending && (
+                                    <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold shrink-0">
+                                      Trending
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-[11px] text-zinc-500 line-clamp-1">{post.shortDescription}</p>
                               </div>
                             </div>
@@ -945,15 +1084,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <ArrowUpRight className="w-4 h-4" />
                               </button>
 
-                              <button
-                                onClick={() => handleToggleFeature(post)}
-                                title="Toggle Featured"
-                                className={`p-2 rounded-lg transition-colors ${
-                                  post.featured ? 'text-blue-400 bg-blue-500/10' : 'text-zinc-500 hover:text-white'
-                                }`}
-                              >
-                                <Sparkles className="w-4 h-4" />
-                              </button>
+                              {/* Featured Toggle Button */}
+                              {post.featured ? (
+                                <button
+                                  onClick={() => handleRemoveFeatured(post)}
+                                  title="Remove Featured Status"
+                                  className="px-2 py-1 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[11px] font-bold flex items-center gap-1 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5 fill-blue-400" />
+                                  <span className="hidden xl:inline">Featured</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleSetFeatured(post)}
+                                  title="Set as Featured Post"
+                                  className="px-2 py-1 rounded-lg bg-zinc-800 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 text-[11px] font-medium flex items-center gap-1 transition-colors"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Set Featured</span>
+                                </button>
+                              )}
+
+                              {/* Trending Toggle Button */}
+                              {post.trending ? (
+                                <button
+                                  onClick={() => handleRemoveTrending(post)}
+                                  title="Remove Trending Status"
+                                  className="px-2 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1 hover:bg-rose-500/20 hover:text-rose-400 hover:border-rose-500/30 transition-colors"
+                                >
+                                  <Flame className="w-3.5 h-3.5 fill-amber-400" />
+                                  <span className="hidden xl:inline">Trending</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleSetTrending(post)}
+                                  title="Set as Trending Post"
+                                  className="px-2 py-1 rounded-lg bg-zinc-800 text-zinc-400 hover:text-amber-400 hover:bg-amber-500/10 text-[11px] font-medium flex items-center gap-1 transition-colors"
+                                >
+                                  <Flame className="w-3.5 h-3.5" />
+                                  <span className="hidden xl:inline">Set Trending</span>
+                                </button>
+                              )}
 
                               <button
                                 onClick={() => onEditPost(post)}
@@ -2050,10 +2221,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             {/* Social Links Section */}
             <div className="p-5 rounded-2xl bg-zinc-950 border border-zinc-800/80 space-y-4 md:col-span-2">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-800 pb-3 gap-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-                  <Globe className="w-4 h-4" />
-                  <span>Social Links & Enable / Disable Controls</span>
-                </h4>
+                <div className="flex items-center gap-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    <span>Social Links & Enable / Disable Controls</span>
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentMaster = featureControls.footerSocialLinks && (websiteSettings.socialLinks?.enabled !== false);
+                      const newMaster = !currentMaster;
+                      promptStore.updateFeatureControls({ footerSocialLinks: newMaster });
+                      const updatedSettings = {
+                        ...websiteSettings,
+                        socialLinks: { ...websiteSettings.socialLinks, enabled: newMaster },
+                      };
+                      setWebsiteSettings(updatedSettings);
+                      promptStore.updateWebsiteSettings(updatedSettings);
+                      showToast(
+                        newMaster ? '✓ Social Media Enabled' : '✕ Social Media Disabled',
+                        newMaster ? 'Social media section enabled globally.' : 'Social media section hidden globally.'
+                      );
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 border cursor-pointer ${
+                      (featureControls.footerSocialLinks && (websiteSettings.socialLinks?.enabled !== false))
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                        : 'bg-red-500/20 text-red-400 border-red-500/40'
+                    }`}
+                  >
+                    <span>Section:</span>
+                    <strong>
+                      {(featureControls.footerSocialLinks && (websiteSettings.socialLinks?.enabled !== false)) ? 'ENABLED' : 'DISABLED'}
+                    </strong>
+                  </button>
+                </div>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -2275,7 +2476,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
 
                 {/* 7. GitHub URL */}
-                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/80 space-y-2 sm:col-span-2 md:col-span-1">
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/80 space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-[11px] font-bold uppercase text-zinc-300 flex items-center gap-1.5">
                       <Github className="w-3.5 h-3.5 text-purple-400" />
@@ -2302,6 +2503,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       setWebsiteSettings({
                         ...websiteSettings,
                         socialLinks: { ...websiteSettings.socialLinks, github: e.target.value },
+                      })
+                    }
+                    className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-xs"
+                  />
+                </div>
+
+                {/* 8. Discord URL */}
+                <div className="p-3 rounded-xl bg-zinc-900/50 border border-zinc-800/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold uppercase text-zinc-300 flex items-center gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Discord</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const val = !featureControls.discordToggle;
+                        promptStore.updateFeatureControls({ discordToggle: val });
+                      }}
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${
+                        featureControls.discordToggle ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      }`}
+                    >
+                      {featureControls.discordToggle ? 'ENABLED' : 'DISABLED'}
+                    </button>
+                  </div>
+                  <input
+                    type="url"
+                    placeholder="e.g., https://discord.gg/your_invite"
+                    value={websiteSettings.socialLinks?.discord || ''}
+                    onChange={(e) =>
+                      setWebsiteSettings({
+                        ...websiteSettings,
+                        socialLinks: { ...websiteSettings.socialLinks, discord: e.target.value },
                       })
                     }
                     className="w-full px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 text-xs"
@@ -2506,7 +2741,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             {/* GitHub */}
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2 md:col-span-2">
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
               <label className="block text-xs font-bold text-white flex items-center gap-2">
                 <Github className="w-4 h-4 text-purple-400" />
                 <span>GitHub Profile URL</span>
@@ -2524,6 +2759,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
               <p className="text-[11px] text-zinc-500">Direct link to your GitHub developer profile.</p>
+            </div>
+
+            {/* Discord */}
+            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-2">
+              <label className="block text-xs font-bold text-white flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-indigo-400" />
+                <span>Discord Server/Invite URL</span>
+              </label>
+              <input
+                type="url"
+                placeholder="e.g., https://discord.gg/your_invite"
+                value={websiteSettings.socialLinks?.discord || ''}
+                onChange={(e) =>
+                  setWebsiteSettings({
+                    ...websiteSettings,
+                    socialLinks: { ...websiteSettings.socialLinks, discord: e.target.value },
+                  })
+                }
+                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+              <p className="text-[11px] text-zinc-500">Direct invite link to your Discord community server.</p>
             </div>
           </div>
 

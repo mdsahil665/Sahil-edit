@@ -67,13 +67,15 @@ const DEFAULT_WEBSITE_SETTINGS: WebsiteSettings = {
   accentColor: '#3b82f6',
   darkModeDefault: true,
   socialLinks: {
-    instagram: '',
-    facebook: '',
-    whatsapp: '',
-    telegram: '',
-    youtube: '',
-    twitter: '',
-    github: '',
+    enabled: true,
+    instagram: 'https://instagram.com/sahiledits',
+    facebook: 'https://facebook.com/sahiledits',
+    whatsapp: 'https://wa.me/919876543210',
+    telegram: 'https://t.me/sahiledits',
+    youtube: 'https://youtube.com/@sahiledits',
+    twitter: 'https://x.com/sahiledits',
+    github: 'https://github.com/sahiledits',
+    discord: 'https://discord.gg/sahiledits',
   },
   contactEmail: 'mdsahil012002@gmail.com',
   contactPhone: '+1 (555) 019-2834',
@@ -521,13 +523,72 @@ class PromptStore {
     return this.postsCache.find((p) => p.id === id);
   }
 
+  public getFeaturedPost(): PromptPost | undefined {
+    return this.postsCache.find((p) => p.featured === true);
+  }
+
+  public getTrendingPost(): PromptPost | undefined {
+    return this.postsCache.find((p) => p.trending === true);
+  }
+
+  public async setFeaturedPost(id: string): Promise<void> {
+    const existing = this.getFeaturedPost();
+    if (existing && existing.id !== id) {
+      await this.updatePost(existing.id, { featured: false });
+    }
+    await this.updatePost(id, { featured: true });
+  }
+
+  public async removeFeaturedPost(id?: string): Promise<void> {
+    const targetId = id || this.getFeaturedPost()?.id;
+    if (targetId) {
+      await this.updatePost(targetId, { featured: false });
+    }
+  }
+
+  public async setTrendingPost(id: string): Promise<void> {
+    const existing = this.getTrendingPost();
+    if (existing && existing.id !== id) {
+      await this.updatePost(existing.id, { trending: false });
+    }
+    await this.updatePost(id, { trending: true });
+  }
+
+  public async removeTrendingPost(id?: string): Promise<void> {
+    const targetId = id || this.getTrendingPost()?.id;
+    if (targetId) {
+      await this.updatePost(targetId, { trending: false });
+    }
+  }
+
   public async addPost(
     postData: Omit<PromptPost, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'copies'>
   ): Promise<PromptPost> {
     const id = 'prompt-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
     const now = new Date().toISOString();
+    
+    // Unset featured/trending on other posts if newly added post has them set
+    if (postData.featured) {
+      for (const p of this.postsCache) {
+        if (p.featured) {
+          p.featured = false;
+          updateDoc(doc(db, 'prompts', p.id), { featured: false }).catch(console.error);
+        }
+      }
+    }
+    if (postData.trending) {
+      for (const p of this.postsCache) {
+        if (p.trending) {
+          p.trending = false;
+          updateDoc(doc(db, 'prompts', p.id), { trending: false }).catch(console.error);
+        }
+      }
+    }
+
     const newPost: PromptPost = {
       ...postData,
+      featured: Boolean(postData.featured),
+      trending: Boolean(postData.trending),
       id,
       views: 0,
       copies: 0,
@@ -536,6 +597,7 @@ class PromptStore {
     };
 
     this.postsCache.unshift(newPost);
+    this.saveLocalCache();
     this.notify();
 
     try {
@@ -556,6 +618,24 @@ class PromptStore {
     const index = this.postsCache.findIndex((p) => p.id === id);
     if (index === -1) return null;
 
+    // Enforce single-featured and single-trending invariants
+    if (updates.featured === true) {
+      for (const p of this.postsCache) {
+        if (p.id !== id && p.featured) {
+          p.featured = false;
+          updateDoc(doc(db, 'prompts', p.id), { featured: false }).catch(console.error);
+        }
+      }
+    }
+    if (updates.trending === true) {
+      for (const p of this.postsCache) {
+        if (p.id !== id && p.trending) {
+          p.trending = false;
+          updateDoc(doc(db, 'prompts', p.id), { trending: false }).catch(console.error);
+        }
+      }
+    }
+
     const updatedAt = new Date().toISOString();
     const updatedPost = {
       ...this.postsCache[index],
@@ -564,6 +644,7 @@ class PromptStore {
     };
 
     this.postsCache[index] = updatedPost;
+    this.saveLocalCache();
     this.notify();
 
     try {
@@ -1030,15 +1111,10 @@ class PromptStore {
   // --- WEBSITE SETTINGS ---
   public getWebsiteSettings(): WebsiteSettings {
     return {
+      ...DEFAULT_WEBSITE_SETTINGS,
       ...this.websiteSettingsCache,
       socialLinks: {
-        instagram: '',
-        facebook: '',
-        whatsapp: '',
-        telegram: '',
-        youtube: '',
-        twitter: '',
-        github: '',
+        ...DEFAULT_WEBSITE_SETTINGS.socialLinks,
         ...(this.websiteSettingsCache?.socialLinks || {}),
       },
     };

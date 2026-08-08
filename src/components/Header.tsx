@@ -50,21 +50,31 @@ export const Header: React.FC<HeaderProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const [fc, setFc] = useState(() => promptStore.getFeatureControls());
+  const [websiteSettings, setWebsiteSettings] = useState(() => promptStore.getWebsiteSettings());
+  const { logoUrl } = useLogo();
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    const unsubscribe = promptStore.subscribe(() => {
+      setFc(promptStore.getFeatureControls());
+      setWebsiteSettings(promptStore.getWebsiteSettings());
+    });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      unsubscribe();
+    };
   }, []);
 
   const handleLogout = async () => {
     await logout();
     setIsMenuOpen(false);
   };
-
-  const fc = promptStore.getFeatureControls();
-  const { logoUrl } = useLogo();
 
   return (
     <>

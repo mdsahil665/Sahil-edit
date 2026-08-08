@@ -442,7 +442,19 @@ export const PostFormModal: React.FC<PostFormModalProps> = ({
                     <input
                       type="checkbox"
                       checked={featured}
-                      onChange={(e) => setFeatured(e.target.checked)}
+                      onChange={(e) => {
+                        const willBeFeatured = e.target.checked;
+                        if (willBeFeatured) {
+                          const current = promptStore.getFeaturedPost();
+                          if (current && current.id !== post?.id) {
+                            const replace = window.confirm(
+                              `Replace the current Featured Post ("${current.title}")?`
+                            );
+                            if (!replace) return;
+                          }
+                        }
+                        setFeatured(willBeFeatured);
+                      }}
                       className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
                     />
                     <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Featured Post</span>
@@ -452,7 +464,19 @@ export const PostFormModal: React.FC<PostFormModalProps> = ({
                     <input
                       type="checkbox"
                       checked={trending}
-                      onChange={(e) => setTrending(e.target.checked)}
+                      onChange={(e) => {
+                        const willBeTrending = e.target.checked;
+                        if (willBeTrending) {
+                          const current = promptStore.getTrendingPost();
+                          if (current && current.id !== post?.id) {
+                            const replace = window.confirm(
+                              `Replace the current Trending Post ("${current.title}")?`
+                            );
+                            if (!replace) return;
+                          }
+                        }
+                        setTrending(willBeTrending);
+                      }}
                       className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500"
                     />
                     <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200">Trending Post</span>

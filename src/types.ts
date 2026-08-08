@@ -161,6 +161,7 @@ export interface SecuritySettings {
 
 // --- WEBSITE SETTINGS ---
 export interface SocialMediaLinks {
+  enabled?: boolean;
   instagram: string;
   facebook: string;
   whatsapp: string;
@@ -266,6 +267,7 @@ export interface FeatureControls {
   telegramToggle: boolean;
   youtubeToggle: boolean;
   githubToggle: boolean;
+  discordToggle: boolean;
 
   // POST FEATURES
   imageUpload: boolean;
@@ -350,6 +352,7 @@ export const DEFAULT_FEATURE_CONTROLS: FeatureControls = {
   telegramToggle: true,
   youtubeToggle: true,
   githubToggle: true,
+  discordToggle: true,
 
   // POST FEATURES
   imageUpload: true,

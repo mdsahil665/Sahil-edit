@@ -81,6 +81,7 @@ const ALL_FEATURES: FeatureItem[] = [
   { key: 'telegramToggle', label: 'Telegram Integration', description: 'Enable or disable Telegram link in footer and share modal.', category: 'SOCIAL MEDIA' },
   { key: 'youtubeToggle', label: 'YouTube Integration', description: 'Enable or disable YouTube channel link in footer.', category: 'SOCIAL MEDIA' },
   { key: 'githubToggle', label: 'GitHub Integration', description: 'Enable or disable GitHub profile link in footer.', category: 'SOCIAL MEDIA' },
+  { key: 'discordToggle', label: 'Discord Integration', description: 'Enable or disable Discord server link in footer.', category: 'SOCIAL MEDIA' },
 
   // POST FEATURES
   { key: 'imageUpload', label: 'Image Upload', description: 'Allows uploading local file images when creating or editing posts.', category: 'POST FEATURES' },

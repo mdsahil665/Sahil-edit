@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   Instagram,
   Facebook,
   Github,
+  Youtube,
+  MessageSquare,
   ArrowUp,
   Zap,
   ShieldCheck,
@@ -47,17 +49,9 @@ const DiscordIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
   </svg>
 );
 
-const formatSocialUrl = (url?: string, platform?: string, fallbackHandle?: string) => {
+const formatSocialUrl = (url?: string, platform?: string) => {
   if (!url || !url.trim()) {
-    if (fallbackHandle) {
-      if (platform === 'instagram') return `https://instagram.com/${fallbackHandle}`;
-      if (platform === 'facebook') return `https://facebook.com/${fallbackHandle}`;
-      if (platform === 'twitter') return `https://x.com/${fallbackHandle}`;
-      if (platform === 'telegram') return `https://t.me/${fallbackHandle}`;
-      if (platform === 'discord') return `https://discord.gg/${fallbackHandle}`;
-      if (platform === 'github') return `https://github.com/${fallbackHandle}`;
-    }
-    return '#';
+    return '';
   }
   const trimmed = url.trim();
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
@@ -70,6 +64,7 @@ const formatSocialUrl = (url?: string, platform?: string, fallbackHandle?: strin
     if (platform === 'discord') return `https://discord.gg/${handle}`;
     if (platform === 'youtube') return `https://youtube.com/@${handle}`;
     if (platform === 'github') return `https://github.com/${handle}`;
+    if (platform === 'whatsapp') return `https://wa.me/${handle}`;
     return `https://${platform || 'instagram'}.com/${handle}`;
   }
   if (!trimmed.includes('.')) {
@@ -80,6 +75,7 @@ const formatSocialUrl = (url?: string, platform?: string, fallbackHandle?: strin
     if (platform === 'discord') return `https://discord.gg/${trimmed}`;
     if (platform === 'youtube') return `https://youtube.com/@${trimmed}`;
     if (platform === 'github') return `https://github.com/${trimmed}`;
+    if (platform === 'whatsapp') return `https://wa.me/${trimmed}`;
   }
   return `https://${trimmed}`;
 };
@@ -89,10 +85,19 @@ export const Footer: React.FC<FooterProps> = React.memo(({ onOpenPage }) => {
   const { showToast } = useToast();
   const { logoUrl } = useLogo();
 
+  const [websiteSettings, setWebsiteSettings] = useState(() => promptStore.getWebsiteSettings());
+  const [fc, setFc] = useState(() => promptStore.getFeatureControls());
+
+  useEffect(() => {
+    const unsubscribe = promptStore.subscribe(() => {
+      setWebsiteSettings(promptStore.getWebsiteSettings());
+      setFc(promptStore.getFeatureControls());
+    });
+    return unsubscribe;
+  }, []);
+
   const publishedPages = promptStore.getPages().filter((p) => p.status === 'published');
   const monetizationSettings = promptStore.getMonetization();
-  const websiteSettings = promptStore.getWebsiteSettings();
-  const fc = promptStore.getFeatureControls();
   const social = websiteSettings.socialLinks;
   const footerText = websiteSettings.footerText || '© 2026 Sahil Edits. All Rights Reserved.';
 
@@ -131,51 +136,88 @@ export const Footer: React.FC<FooterProps> = React.memo(({ onOpenPage }) => {
     }
   };
 
+  // Master social media toggle check
+  const isSocialMediaEnabled =
+    (fc.footerSocialLinks !== false) &&
+    (websiteSettings.socialLinks?.enabled !== false);
+
   // Social items list
-  const socialItems = [
+  const rawSocialList = [
     {
       id: 'instagram',
       label: 'Instagram',
-      url: formatSocialUrl(social?.instagram, 'instagram', 'sahiledits'),
+      rawUrl: social?.instagram,
+      platform: 'instagram',
       icon: <Instagram className="w-5 h-5" />,
-      enabled: fc.instagramToggle,
+      enabled: fc.instagramToggle !== false,
     },
     {
       id: 'facebook',
       label: 'Facebook',
-      url: formatSocialUrl(social?.facebook, 'facebook', 'sahiledits'),
+      rawUrl: social?.facebook,
+      platform: 'facebook',
       icon: <Facebook className="w-5 h-5" />,
-      enabled: fc.facebookToggle,
+      enabled: fc.facebookToggle !== false,
     },
     {
       id: 'telegram',
       label: 'Telegram',
-      url: formatSocialUrl(social?.telegram, 'telegram', 'sahiledits'),
+      rawUrl: social?.telegram,
+      platform: 'telegram',
       icon: <TelegramIcon className="w-5 h-5" />,
-      enabled: fc.telegramToggle,
+      enabled: fc.telegramToggle !== false,
     },
     {
       id: 'discord',
       label: 'Discord',
-      url: formatSocialUrl(social?.discord, 'discord', 'sahiledits'),
+      rawUrl: social?.discord,
+      platform: 'discord',
       icon: <DiscordIcon className="w-5 h-5" />,
-      enabled: true,
+      enabled: fc.discordToggle !== false,
     },
     {
-      id: 'github',
-      label: 'GitHub',
-      url: formatSocialUrl(social?.github, 'github', 'sahiledits'),
-      icon: <Github className="w-5 h-5" />,
-      enabled: fc.githubToggle,
+      id: 'youtube',
+      label: 'YouTube',
+      rawUrl: social?.youtube,
+      platform: 'youtube',
+      icon: <Youtube className="w-5 h-5 text-red-500" />,
+      enabled: fc.youtubeToggle !== false,
     },
     {
       id: 'twitter',
       label: 'X (Twitter)',
-      url: formatSocialUrl(social?.twitter, 'twitter', 'sahiledits'),
+      rawUrl: social?.twitter,
+      platform: 'twitter',
       icon: <XIcon className="w-5 h-5" />,
-      enabled: fc.twitterToggle,
+      enabled: fc.twitterToggle !== false,
     },
-  ].filter((item) => item.enabled !== false && fc.footerSocialLinks !== false);
+    {
+      id: 'whatsapp',
+      label: 'WhatsApp',
+      rawUrl: social?.whatsapp,
+      platform: 'whatsapp',
+      icon: <MessageSquare className="w-5 h-5 text-emerald-400" />,
+      enabled: fc.whatsappToggle !== false,
+    },
+    {
+      id: 'github',
+      label: 'GitHub',
+      rawUrl: social?.github,
+      platform: 'github',
+      icon: <Github className="w-5 h-5" />,
+      enabled: fc.githubToggle !== false,
+    },
+  ];
+
+  const activeSocialItems = isSocialMediaEnabled
+    ? rawSocialList
+        .filter((item) => item.enabled && item.rawUrl && item.rawUrl.trim().length > 0)
+        .map((item) => ({
+          ...item,
+          url: formatSocialUrl(item.rawUrl, item.platform),
+        }))
+        .filter((item) => item.url.length > 0)
+    : [];
 
   // Glowing badges array
   const glowingBadges = [
@@ -409,27 +451,29 @@ export const Footer: React.FC<FooterProps> = React.memo(({ onOpenPage }) => {
             </div>
 
             {/* Social Media Section (Directly below Newsletter) */}
-            <div className="flex flex-col gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                Connect With Us
-              </h3>
+            {activeSocialItems.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  Connect With Us
+                </h3>
 
-              <div className="flex items-center flex-wrap gap-2.5 sm:gap-3">
-                {socialItems.map((item) => (
-                  <a
-                    key={item.id}
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={item.label}
-                    title={item.label}
-                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/[0.08] border border-white/10 text-slate-300 flex items-center justify-center transition-all duration-200 hover:scale-110 hover:text-blue-400 hover:border-blue-400/60 hover:bg-blue-500/10 cursor-pointer"
-                  >
-                    {item.icon}
-                  </a>
-                ))}
+                <div className="flex items-center flex-wrap gap-2.5 sm:gap-3">
+                  {activeSocialItems.map((item) => (
+                    <a
+                      key={item.id}
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={item.label}
+                      title={item.label}
+                      className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/[0.08] border border-white/10 text-slate-300 flex items-center justify-center transition-all duration-200 hover:scale-110 hover:text-blue-400 hover:border-blue-400/60 hover:bg-blue-500/10 cursor-pointer"
+                    >
+                      {item.icon}
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
