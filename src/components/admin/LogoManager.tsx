@@ -1,11 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import Cropper, { Area, Point } from 'react-easy-crop';
 import {
   Upload,
-  Image as ImageIcon,
   RotateCcw,
   Trash2,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   Sparkles,
   Crop,
@@ -14,20 +13,20 @@ import {
   Save,
   Grid,
   ShieldCheck,
-  RefreshCw,
   X,
   Cloud,
   Key,
   Settings,
-  User,
-  Sliders,
+  RotateCw,
+  Maximize2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLogo } from '../../context/LogoContext';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../Toast';
-import { compressImage, uploadSiteLogo } from '../../services/storageService';
+import { uploadSiteLogo } from '../../services/storageService';
 import { promptStore } from '../../services/promptStore';
+import { getCroppedImg, PixelCrop } from '../../utils/cropImage';
 
 // Preset default icons/gallery logos for fast selection
 const GALLERY_PRESETS = [
@@ -73,9 +72,20 @@ export const LogoManager: React.FC = () => {
   const [cloudNameInput, setCloudNameInput] = useState<string>(initialCldSettings.cloudName || 'dvahk0xom');
   const [uploadPresetInput, setUploadPresetInput] = useState<string>(initialCldSettings.uploadPreset || 'sahil_logo');
 
-  // Crop & Resize Controls State
+  // Professional Cropper States
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [cropZoom, setCropZoom] = useState<number>(1);
-  const [cropAspect, setCropAspect] = useState<'square' | 'rounded' | 'circle'>('rounded');
+  const [rotation, setRotation] = useState<number>(0);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<PixelCrop | null>(null);
+  const [cropAspectMode, setCropAspectMode] = useState<'square' | 'rounded' | 'circle'>('rounded');
+  const [livePreviewDataUrl, setLivePreviewDataUrl] = useState<string | null>(null);
+
+  // Reset Cropper state
+  const handleResetCrop = useCallback(() => {
+    setCrop({ x: 0, y: 0 });
+    setCropZoom(1);
+    setRotation(0);
+  }, []);
 
   // Save Cloudinary credentials
   const handleSaveCloudinaryConfig = async () => {
@@ -122,7 +132,7 @@ export const LogoManager: React.FC = () => {
     setSelectedFile(file);
     const objectUrl = URL.createObjectURL(file);
     setPreviewUrl(objectUrl);
-    setCropZoom(1);
+    handleResetCrop();
   };
 
   // Drag and drop handlers
@@ -143,6 +153,47 @@ export const LogoManager: React.FC = () => {
     }
   };
 
+  // Crop Complete Callback from react-easy-crop
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  // Update real-time live preview thumbnail as crop parameters adjust
+  useEffect(() => {
+    if (!previewUrl || !croppedAreaPixels) {
+      setLivePreviewDataUrl(null);
+      return;
+    }
+
+    let isCancelled = false;
+    const updatePreview = async () => {
+      try {
+        const croppedBlob = await getCroppedImg(
+          previewUrl,
+          croppedAreaPixels,
+          rotation,
+          cropAspectMode === 'circle' ? 'round' : 'rect',
+          'image/png'
+        );
+        if (!isCancelled) {
+          const url = URL.createObjectURL(croppedBlob);
+          setLivePreviewDataUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return url;
+          });
+        }
+      } catch (err) {
+        // Suppress transient crop calculation errors during dragging
+      }
+    };
+
+    const timer = setTimeout(updatePreview, 120);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [previewUrl, croppedAreaPixels, rotation, cropAspectMode]);
+
   // Upload and Save Logo to Cloudinary + Firestore settings/site
   const handleSaveLogo = async () => {
     if (!isAdmin) {
@@ -161,15 +212,23 @@ export const LogoManager: React.FC = () => {
     try {
       let finalUrl = previewUrl || '';
 
-      if (selectedFile) {
-        // 1. Compress image before uploading (Skip SVGs)
-        setUploadProgress(10);
-        const compressedBlob = await compressImage(selectedFile, 800, 800, 0.9);
+      if (selectedFile && previewUrl && croppedAreaPixels) {
+        setUploadProgress(15);
+        
+        // 1. Generate high-quality cropped Blob directly from canvas
+        const croppedBlob = await getCroppedImg(
+          previewUrl,
+          croppedAreaPixels,
+          rotation,
+          cropAspectMode === 'circle' ? 'round' : 'rect',
+          'image/png'
+        );
 
-        // 2. Direct Unsigned Upload to Cloudinary Free CDN
-        setUploadProgress(20);
-        finalUrl = await uploadSiteLogo(compressedBlob, selectedFile.name, (prog) => {
-          setUploadProgress(20 + Math.round(prog * 0.7));
+        setUploadProgress(35);
+
+        // 2. Direct Unsigned Upload of cropped Blob to Cloudinary Free CDN
+        finalUrl = await uploadSiteLogo(croppedBlob, selectedFile.name || 'logo.png', (prog) => {
+          setUploadProgress(35 + Math.round(prog * 0.55));
         });
       }
 
@@ -179,14 +238,18 @@ export const LogoManager: React.FC = () => {
       await saveLogo(finalUrl);
 
       setUploadProgress(100);
-      showToast('Logo Saved & Published!', 'Cloudinary secure_url stored in Firestore settings/site.', 'success');
+      showToast('Logo Saved & Published!', 'Cropped Cloudinary logo stored in Firestore settings/site.', 'success');
 
       // Clear local upload state
       setSelectedFile(null);
       setPreviewUrl(null);
+      if (livePreviewDataUrl) {
+        URL.revokeObjectURL(livePreviewDataUrl);
+        setLivePreviewDataUrl(null);
+      }
     } catch (err: any) {
       console.error('Logo upload error:', err);
-      showToast('Upload Failed', err?.message || 'Error uploading logo to Cloudinary.', 'error');
+      showToast('Upload Failed', err?.message || 'Error uploading cropped logo to Cloudinary.', 'error');
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -206,6 +269,7 @@ export const LogoManager: React.FC = () => {
       showToast('Gallery Logo Selected!', 'Site logo updated in Firestore settings/site.', 'success');
       setPreviewUrl(null);
       setSelectedFile(null);
+      setLivePreviewDataUrl(null);
     } catch (err: any) {
       showToast('Failed to Select Logo', err?.message || 'Error saving gallery logo.', 'error');
     } finally {
@@ -231,6 +295,7 @@ export const LogoManager: React.FC = () => {
       showToast('Logo Deleted', 'Restored default site branding in Firestore settings/site.', 'success');
       setPreviewUrl(null);
       setSelectedFile(null);
+      setLivePreviewDataUrl(null);
     } catch (err: any) {
       showToast('Error Deleting Logo', err?.message || 'Could not delete logo.', 'error');
     } finally {
@@ -251,12 +316,15 @@ export const LogoManager: React.FC = () => {
       showToast('Default Logo Restored', 'The original Sparkles logo icon is active.', 'success');
       setPreviewUrl(null);
       setSelectedFile(null);
+      setLivePreviewDataUrl(null);
     } catch (err: any) {
       showToast('Error Restoring Logo', err?.message || 'Could not restore default logo.', 'error');
     } finally {
       setUploading(false);
     }
   };
+
+  const activeDisplayLogo = livePreviewDataUrl || previewUrl || logoUrl;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -279,7 +347,7 @@ export const LogoManager: React.FC = () => {
         <div className="flex items-center gap-3 shrink-0">
           <button
             onClick={() => setShowConfig(!showConfig)}
-            className="p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors flex items-center gap-2 text-xs font-bold"
+            className="p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors flex items-center gap-2 text-xs font-bold cursor-pointer"
             title="Configure Cloudinary API Keys"
           >
             <Settings className="w-4 h-4 text-blue-400" />
@@ -288,8 +356,8 @@ export const LogoManager: React.FC = () => {
 
           <div className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center p-1 overflow-hidden border border-white/20 shadow-inner">
-              {logoUrl ? (
-                <img src={logoUrl} alt="Live Logo" className="w-full h-full object-contain rounded-lg" />
+              {activeDisplayLogo ? (
+                <img src={activeDisplayLogo} alt="Live Logo" className="w-full h-full object-contain rounded-lg" />
               ) : (
                 <Sparkles className="w-6 h-6 text-white" />
               )}
@@ -323,7 +391,7 @@ export const LogoManager: React.FC = () => {
               </div>
               <button
                 onClick={() => setShowConfig(false)}
-                className="text-xs text-zinc-400 hover:text-white"
+                className="text-xs text-zinc-400 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -364,7 +432,7 @@ export const LogoManager: React.FC = () => {
             <div className="flex justify-end pt-2">
               <button
                 onClick={handleSaveCloudinaryConfig}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition-colors"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
               >
                 Save Cloudinary Credentials
               </button>
@@ -381,7 +449,7 @@ export const LogoManager: React.FC = () => {
           <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-zinc-900/80 border border-zinc-800">
             <button
               onClick={() => setActiveTab('upload')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'upload'
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
@@ -392,7 +460,7 @@ export const LogoManager: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('gallery')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'gallery'
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
@@ -411,7 +479,7 @@ export const LogoManager: React.FC = () => {
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className="relative cursor-pointer border-2 border-dashed border-zinc-700 hover:border-blue-500/80 rounded-2xl p-8 sm:p-10 text-center transition-all group bg-zinc-950/40 hover:bg-blue-500/5"
+                className="relative cursor-pointer border-2 border-dashed border-zinc-700 hover:border-blue-500/80 rounded-2xl p-6 sm:p-8 text-center transition-all group bg-zinc-950/40 hover:bg-blue-500/5"
               >
                 <input
                   type="file"
@@ -422,8 +490,8 @@ export const LogoManager: React.FC = () => {
                 />
 
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/10">
-                    <Upload className="w-7 h-7" />
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/10">
+                    <Upload className="w-6 h-6" />
                   </div>
 
                   <div className="space-y-1">
@@ -443,7 +511,7 @@ export const LogoManager: React.FC = () => {
                   <div className="flex justify-between items-center text-xs font-bold text-zinc-300">
                     <span className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                      Uploading to Cloudinary Free CDN &amp; Syncing Firestore...
+                      Uploading Cropped Logo to Cloudinary Free CDN...
                     </span>
                     <span className="text-blue-400">{uploadProgress}%</span>
                   </div>
@@ -456,93 +524,173 @@ export const LogoManager: React.FC = () => {
                 </div>
               )}
 
-              {/* Crop & Resize Editor Preview Section */}
+              {/* Professional Cropper & Touch Canvas Section */}
               {previewUrl && (
-                <div className="p-5 rounded-2xl bg-zinc-950/80 border border-zinc-800 space-y-4">
+                <div className="p-5 rounded-2xl bg-zinc-950/90 border border-zinc-800 space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-zinc-300 flex items-center gap-2">
+                    <span className="text-xs font-bold text-zinc-200 flex items-center gap-2">
                       <Crop className="w-4 h-4 text-blue-400" />
-                      Crop, Aspect &amp; Scale Adjustment
+                      <span>Interactive Touch &amp; Drag Logo Cropper</span>
                     </span>
                     <button
                       onClick={() => {
                         setPreviewUrl(null);
                         setSelectedFile(null);
+                        setLivePreviewDataUrl(null);
                       }}
-                      className="text-xs text-rose-400 hover:text-rose-300 font-semibold"
+                      className="text-xs text-rose-400 hover:text-rose-300 font-semibold cursor-pointer"
                     >
                       Remove
                     </button>
                   </div>
 
-                  {/* Interactive Crop Preview Box */}
-                  <div className="flex items-center justify-center p-6 bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden min-h-[160px]">
-                    <div
-                      className={`relative overflow-hidden transition-all duration-200 flex items-center justify-center ${
-                        cropAspect === 'circle'
-                          ? 'rounded-full border-2 border-blue-500'
-                          : cropAspect === 'rounded'
-                          ? 'rounded-2xl border-2 border-blue-500'
-                          : 'rounded-none border-2 border-blue-500'
-                      }`}
-                      style={{ width: 110, height: 110 }}
-                    >
-                      <img
-                        src={previewUrl}
-                        alt="Crop Preview"
-                        className="object-contain transition-transform duration-150"
-                        style={{ transform: `scale(${cropZoom})` }}
-                      />
+                  {/* Interactive 60fps Drag & Zoom Cropper Container */}
+                  <div
+                    onDoubleClick={handleResetCrop}
+                    className="relative w-full h-72 sm:h-80 bg-zinc-950 rounded-2xl overflow-hidden border-2 border-blue-500/40 shadow-inner touch-none cursor-grab active:cursor-grabbing group"
+                    title="Drag to position, pinch or scroll to zoom, double tap to reset"
+                  >
+                    <Cropper
+                      image={previewUrl}
+                      crop={crop}
+                      zoom={cropZoom}
+                      rotation={rotation}
+                      aspect={1}
+                      cropShape={cropAspectMode === 'circle' ? 'round' : 'rect'}
+                      showGrid={true}
+                      onCropChange={setCrop}
+                      onCropComplete={onCropComplete}
+                      onZoomChange={setCropZoom}
+                      onRotationChange={setRotation}
+                      classes={{
+                        containerClassName: 'w-full h-full',
+                        cropAreaClassName:
+                          cropAspectMode === 'rounded'
+                            ? '!rounded-2xl !border-2 !border-blue-500 !shadow-[0_0_0_9999px_rgba(9,9,11,0.75)]'
+                            : '!border-2 !border-blue-500 !shadow-[0_0_0_9999px_rgba(9,9,11,0.75)]',
+                      }}
+                    />
+
+                    {/* Touch / Drag Gesture Guidance Badge */}
+                    <div className="absolute top-3 left-3 pointer-events-none z-10 px-2.5 py-1 rounded-full bg-zinc-950/80 backdrop-blur-md text-[10px] font-bold text-zinc-300 border border-white/10 flex items-center gap-1.5 shadow-md">
+                      <Maximize2 className="w-3 h-3 text-blue-400" />
+                      <span>Drag to Pan • Pinch / Scroll to Zoom</span>
                     </div>
                   </div>
 
-                  {/* Zoom Controls */}
-                  <div className="flex items-center justify-between gap-4 pt-2">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCropZoom((z) => Math.max(0.5, z - 0.1))}
-                        className="p-2 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                        title="Zoom Out"
-                      >
-                        <ZoomOut className="w-4 h-4" />
-                      </button>
-                      <span className="text-xs font-bold text-zinc-400 w-12 text-center">
-                        {Math.round(cropZoom * 100)}%
-                      </span>
-                      <button
-                        onClick={() => setCropZoom((z) => Math.min(2.5, z + 0.1))}
-                        className="p-2 rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                        title="Zoom In"
-                      >
-                        <ZoomIn className="w-4 h-4" />
-                      </button>
+                  {/* Cropper Controls Grid */}
+                  <div className="space-y-3 pt-2">
+                    {/* Zoom & Rotation Sliders */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-zinc-900/80 p-4 rounded-xl border border-zinc-800">
+                      {/* Zoom Control */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
+                          <span className="flex items-center gap-1.5 text-zinc-400">
+                            <ZoomIn className="w-3.5 h-3.5 text-blue-400" />
+                            Zoom Scale
+                          </span>
+                          <span className="font-mono text-blue-400">{Math.round(cropZoom * 100)}%</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setCropZoom((z) => Math.max(1, +(z - 0.1).toFixed(2)))}
+                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors cursor-pointer"
+                            title="Zoom Out"
+                          >
+                            <ZoomOut className="w-3.5 h-3.5" />
+                          </button>
+                          <input
+                            type="range"
+                            min={1}
+                            max={3}
+                            step={0.05}
+                            value={cropZoom}
+                            onChange={(e) => setCropZoom(parseFloat(e.target.value))}
+                            className="w-full accent-blue-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setCropZoom((z) => Math.min(3, +(z + 0.1).toFixed(2)))}
+                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors cursor-pointer"
+                            title="Zoom In"
+                          >
+                            <ZoomIn className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Rotation Control */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-bold text-zinc-300">
+                          <span className="flex items-center gap-1.5 text-zinc-400">
+                            <RotateCw className="w-3.5 h-3.5 text-indigo-400" />
+                            Rotation Angle
+                          </span>
+                          <span className="font-mono text-indigo-400">{rotation}°</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min={0}
+                            max={360}
+                            step={1}
+                            value={rotation}
+                            onChange={(e) => setRotation(parseInt(e.target.value, 10))}
+                            className="w-full accent-indigo-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setRotation((r) => (r + 90) % 360)}
+                            className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors cursor-pointer shrink-0"
+                            title="Rotate 90°"
+                          >
+                            <RotateCw className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Aspect Buttons */}
-                    <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+                    {/* Shape Selector & Reset */}
+                    <div className="flex items-center justify-between gap-3 pt-1">
+                      <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800">
+                        <button
+                          type="button"
+                          onClick={() => setCropAspectMode('rounded')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            cropAspectMode === 'rounded' ? 'bg-blue-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          Rounded
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCropAspectMode('circle')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            cropAspectMode === 'circle' ? 'bg-blue-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          Circle
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCropAspectMode('square')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            cropAspectMode === 'square' ? 'bg-blue-600 text-white shadow-sm' : 'text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          Square
+                        </button>
+                      </div>
+
                       <button
-                        onClick={() => setCropAspect('rounded')}
-                        className={`px-3 py-1 rounded-lg text-[11px] font-bold ${
-                          cropAspect === 'rounded' ? 'bg-blue-600 text-white' : 'text-zinc-400'
-                        }`}
+                        type="button"
+                        onClick={handleResetCrop}
+                        className="px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="Reset zoom, position and rotation"
                       >
-                        Rounded
-                      </button>
-                      <button
-                        onClick={() => setCropAspect('circle')}
-                        className={`px-3 py-1 rounded-lg text-[11px] font-bold ${
-                          cropAspect === 'circle' ? 'bg-blue-600 text-white' : 'text-zinc-400'
-                        }`}
-                      >
-                        Circle
-                      </button>
-                      <button
-                        onClick={() => setCropAspect('square')}
-                        className={`px-3 py-1 rounded-lg text-[11px] font-bold ${
-                          cropAspect === 'square' ? 'bg-blue-600 text-white' : 'text-zinc-400'
-                        }`}
-                      >
-                        Square
+                        <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Reset</span>
                       </button>
                     </div>
                   </div>
@@ -559,12 +707,12 @@ export const LogoManager: React.FC = () => {
                   {uploading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Saving to Cloudinary &amp; Firestore...</span>
+                      <span>Uploading Cropped Logo...</span>
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      <span>Upload &amp; Save Logo</span>
+                      <span>Upload &amp; Save Cropped Logo</span>
                     </>
                   )}
                 </button>
@@ -648,7 +796,7 @@ export const LogoManager: React.FC = () => {
             </div>
 
             <p className="text-xs text-zinc-400">
-              Preview how your Cloudinary logo automatically renders on every component across the application:
+              Preview how your cropped Cloudinary logo automatically renders on every component across the application in real-time:
             </p>
 
             {/* Preview 1: Header / Navbar */}
@@ -659,8 +807,8 @@ export const LogoManager: React.FC = () => {
               <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white overflow-hidden p-0.5 shadow-md">
-                    {previewUrl || logoUrl ? (
-                      <img src={previewUrl || logoUrl} alt="Header Preview" className="w-full h-full object-cover rounded-lg" />
+                    {activeDisplayLogo ? (
+                      <img src={activeDisplayLogo} alt="Header Preview" className="w-full h-full object-contain rounded-lg" />
                     ) : (
                       <Sparkles className="w-4 h-4 text-white" />
                     )}
@@ -681,8 +829,8 @@ export const LogoManager: React.FC = () => {
               </span>
               <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center overflow-hidden p-1 shadow-md">
-                  {previewUrl || logoUrl ? (
-                    <img src={previewUrl || logoUrl} alt="Login Preview" className="w-full h-full object-cover rounded-xl" />
+                  {activeDisplayLogo ? (
+                    <img src={activeDisplayLogo} alt="Login Preview" className="w-full h-full object-contain rounded-xl" />
                   ) : (
                     <Sparkles className="w-5 h-5 text-white" />
                   )}
@@ -701,8 +849,8 @@ export const LogoManager: React.FC = () => {
               </span>
               <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center overflow-hidden p-1 shadow-lg border border-white/20">
-                  {previewUrl || logoUrl ? (
-                    <img src={previewUrl || logoUrl} alt="Footer Preview" className="w-full h-full object-cover rounded-xl" />
+                  {activeDisplayLogo ? (
+                    <img src={activeDisplayLogo} alt="Footer Preview" className="w-full h-full object-contain rounded-xl" />
                   ) : (
                     <Sparkles className="w-5 h-5 text-white" />
                   )}
@@ -720,7 +868,7 @@ export const LogoManager: React.FC = () => {
             <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 shrink-0 text-blue-400 mt-0.5" />
               <p>
-                Direct Cloudinary Free unsigned uploads. Securely syncs logoUrl to Firestore <code className="bg-blue-950 px-1 py-0.5 rounded text-blue-200">settings/site</code>. Zero Firebase Storage dependency. Restricted exclusively to authenticated Admins.
+                Touch &amp; gesture enabled cropper. Generates high-quality cropped PNG directly in-browser before unsigned Cloudinary upload to Firestore <code className="bg-blue-950 px-1 py-0.5 rounded text-blue-200">settings/site</code>.
               </p>
             </div>
           </div>
