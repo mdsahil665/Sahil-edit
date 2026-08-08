@@ -69,49 +69,52 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <>
       <header
-        className={`sticky top-0 z-40 transition-colors duration-200 ${
+        className={`sticky top-0 z-40 transition-all duration-300 ${
           isScrolled
-            ? 'bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-zinc-200/80 dark:border-zinc-800/80 shadow-sm'
-            : 'bg-white dark:bg-zinc-950 border-b border-zinc-200/40 dark:border-zinc-800/40'
+            ? 'bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-200/60 dark:border-zinc-800/60 shadow-lg shadow-black/5'
+            : 'bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-200/40 dark:border-zinc-800/40'
         }`}
       >
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20 gap-4">
-            {/* 1. Logo & Website Name */}
+        <div className="max-w-[1400px] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20 gap-4 sm:gap-8">
+            {/* 1. Logo Left */}
             <div
               className="flex items-center gap-3 cursor-pointer group shrink-0"
               onClick={onNavigateHome}
             >
-              <div className="w-10 sm:w-11 h-10 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200 overflow-hidden p-0.5">
+              <div className="w-10 sm:w-11 h-10 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 group-hover:scale-105 transition-all duration-300 overflow-hidden p-0.5 border border-white/20">
                 {logoUrl ? (
                   <img src={logoUrl} alt="Website Logo" className="w-full h-full object-cover rounded-xl" />
                 ) : (
                   <Sparkles className="w-5 sm:w-6 h-5 sm:h-6" />
                 )}
               </div>
-              <div>
-                <span className="text-xl sm:text-2xl font-black tracking-tight text-zinc-900 dark:text-white font-sans">
+              <div className="flex flex-col">
+                <span className="text-xl sm:text-2xl font-black tracking-tight text-zinc-900 dark:text-white font-sans bg-clip-text">
                   Sahil Edits
+                </span>
+                <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 tracking-wider uppercase -mt-1 hidden sm:block">
+                  AI Prompt Library
                 </span>
               </div>
             </div>
 
-            {/* 2. Search Bar */}
+            {/* 2. Desktop Search Center (lg:flex) */}
             {fc.searchBar && (
-              <div className="flex-1 max-w-md mx-2 sm:mx-4 relative">
+              <div className="hidden lg:flex flex-1 max-w-md mx-4 relative">
                 <div className="relative w-full">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
-                    placeholder="Search prompts..."
-                    className="w-full pl-10 pr-9 py-2 sm:py-2.5 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200"
+                    placeholder="Search prompts by title, tag, or description..."
+                    className="w-full pl-11 pr-10 py-2.5 rounded-full bg-zinc-100/80 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800/80 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all duration-200 shadow-inner"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => onSearchChange('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 bg-zinc-200 dark:bg-zinc-800 rounded-full w-5 h-5 flex items-center justify-center transition-colors"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 bg-zinc-200 dark:bg-zinc-800 rounded-full w-5 h-5 flex items-center justify-center transition-colors"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -120,27 +123,124 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             )}
 
-            {/* 3. Controls: Dark Mode Toggle, Profile Avatar / Hamburger Menu (☰) */}
+            {/* 3. Desktop Navigation Links (lg:flex) */}
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
+              <button
+                onClick={() => {
+                  onSelectCategory(null);
+                  onSearchChange('');
+                }}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                  selectedCategory === null && !searchQuery
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                    : 'text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-white'
+                }`}
+              >
+                ✨ All Prompts
+              </button>
+
+              {/* Quick Categories */}
+              {categories.slice(0, 4).map((cat) => {
+                const isSelected = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => onSelectCategory(cat.id)}
+                    className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 font-bold'
+                        : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <CategoryIcon name={cat.icon} className="w-3.5 h-3.5 text-blue-500" />
+                    <span>{cat.name}</span>
+                  </button>
+                );
+              })}
+
+              {isAdmin && (
+                <button
+                  onClick={onOpenAdminDashboard}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition-colors flex items-center gap-1.5 ml-1"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Admin</span>
+                </button>
+              )}
+            </nav>
+
+            {/* 4. Controls & Profile Right */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {/* Mobile Search Input (Visible on < lg) */}
+              {fc.searchBar && (
+                <div className="flex lg:hidden flex-1 max-w-[160px] sm:max-w-xs relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    placeholder="Search..."
+                    className="w-full pl-8 pr-7 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => onSearchChange('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-zinc-400"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Dark Mode Toggle */}
               {fc.darkMode && (
                 <button
                   onClick={toggleTheme}
                   aria-label="Toggle theme"
-                  className="p-2.5 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                  className="p-2.5 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors shadow-sm"
                 >
-                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
               )}
 
-              {/* Hamburger Menu Button (☰) with User Profile Icon indicator */}
+              {/* Desktop Profile / Sign In Right */}
+              <div className="hidden lg:flex items-center gap-2">
+                {currentUser ? (
+                  <button
+                    onClick={onOpenProfile}
+                    className="flex items-center gap-2.5 p-1.5 pr-3.5 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-blue-500/50 transition-all cursor-pointer shadow-sm group"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center overflow-hidden border border-white/20">
+                      {currentUser.photoURL ? (
+                        <img src={currentUser.photoURL} alt="User Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        (currentUser.displayName || currentUser.email || 'U').charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 max-w-[100px] truncate">
+                      {currentUser.displayName || currentUser.email?.split('@')[0]}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={onOpenLogin}
+                    className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Mobile Hamburger Menu Button */}
               <button
                 onClick={() => setIsMenuOpen(true)}
                 aria-label="Open Navigation Menu"
-                className="p-2 sm:p-2.5 rounded-2xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all flex items-center gap-2"
+                className="lg:hidden p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all flex items-center gap-1.5"
               >
                 {currentUser ? (
-                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center">
                     {(currentUser.displayName || currentUser.email || 'U').charAt(0).toUpperCase()}
                   </div>
                 ) : null}

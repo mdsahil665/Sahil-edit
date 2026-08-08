@@ -86,10 +86,10 @@ const DEFAULT_WEBSITE_SETTINGS: WebsiteSettings = {
 };
 
 const DEFAULT_CLOUDINARY_SETTINGS: CloudinarySettings = {
-  cloudName: '',
-  uploadPreset: '',
+  cloudName: 'dju83ksjw',
+  uploadPreset: 'sahil_edits_preset',
   apiKey: '',
-  folder: 'sahil_edits_prompts',
+  folder: 'site_logos',
 };
 
 const DEFAULT_COMMENTS_SETTINGS: CommentsSettings = {

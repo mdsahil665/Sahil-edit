@@ -35,8 +35,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     const file = e.target.files?.[0];
     if (!file || !currentUser) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('File Too Large', 'Profile photo must be less than 5MB.', 'error');
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('File Too Large', 'Profile photo must be less than 10MB.', 'error');
       return;
     }
 

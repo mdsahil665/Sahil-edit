@@ -1,7 +1,4 @@
-import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
-import { app } from '../lib/firebase';
-
-export const storage = getStorage(app);
+import { promptStore } from './promptStore';
 
 export interface UploadProgressCallback {
   (progress: number): void;
@@ -9,9 +6,14 @@ export interface UploadProgressCallback {
 
 /**
  * Compresses an image file client-side before uploading.
- * Max width/height 1200px, quality 0.85
+ * Max width/height 1200px, quality 0.85. SVGs are bypassed.
  */
-export async function compressImage(file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.85): Promise<Blob> {
+export async function compressImage(
+  file: File,
+  maxWidth = 1200,
+  maxHeight = 1200,
+  quality = 0.85
+): Promise<Blob> {
   if (file.type === 'image/svg+xml') {
     return file; // SVGs don't need canvas compression
   }
@@ -67,47 +69,91 @@ export async function compressImage(file: File, maxWidth = 1200, maxHeight = 120
 }
 
 /**
- * Uploads a logo file or blob to Firebase Storage at `logos/site_logo_<timestamp>`
+ * Uploads directly to Cloudinary Free using Unsigned Upload API
+ * Provides 0-100% progress callback via XMLHttpRequest
+ */
+export async function uploadToCloudinary(
+  fileOrBlob: File | Blob,
+  fileName: string,
+  folder = 'site_logos',
+  onProgress?: UploadProgressCallback
+): Promise<string> {
+  const cldSettings = promptStore.getCloudinarySettings();
+  const cloudName = cldSettings.cloudName?.trim() || 'dju83ksjw';
+  const uploadPreset = cldSettings.uploadPreset?.trim() || 'sahil_edits_preset';
+
+  if (!cloudName || !uploadPreset) {
+    throw new Error('Cloudinary Cloud Name or Upload Preset is missing. Please configure in Admin Settings.');
+  }
+
+  const formData = new FormData();
+  const fileToUpload =
+    fileOrBlob instanceof File
+      ? fileOrBlob
+      : new File([fileOrBlob], fileName, { type: fileOrBlob.type || 'image/png' });
+
+  formData.append('file', fileToUpload);
+  formData.append('upload_preset', uploadPreset);
+  if (folder) {
+    formData.append('folder', folder);
+  }
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`);
+
+    if (xhr.upload && onProgress) {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100);
+          onProgress(percent);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          if (response.secure_url) {
+            resolve(response.secure_url);
+          } else {
+            reject(new Error('Cloudinary response missing secure_url'));
+          }
+        } catch {
+          reject(new Error('Invalid JSON response from Cloudinary'));
+        }
+      } else {
+        try {
+          const errResp = JSON.parse(xhr.responseText);
+          reject(new Error(errResp.error?.message || `Cloudinary upload failed (Status ${xhr.status})`));
+        } catch {
+          reject(new Error(`Cloudinary upload failed with status ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Network error uploading to Cloudinary. Check connection and Cloudinary settings.'));
+    };
+
+    xhr.send(formData);
+  });
+}
+
+/**
+ * Upload site logo helper
  */
 export async function uploadSiteLogo(
   fileOrBlob: File | Blob,
   fileName: string,
   onProgress?: UploadProgressCallback
 ): Promise<string> {
-  const timestamp = Date.now();
-  const cleanName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const storagePath = `logos/site_logo_${timestamp}_${cleanName}`;
-  const storageRef = ref(storage, storagePath);
-
-  const uploadTask = uploadBytesResumable(storageRef, fileOrBlob);
-
-  return new Promise((resolve, reject) => {
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        if (onProgress) {
-          onProgress(progress);
-        }
-      },
-      (error) => {
-        console.error('Firebase Storage Upload Error:', error);
-        reject(error);
-      },
-      async () => {
-        try {
-          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadUrl);
-        } catch (urlErr) {
-          reject(urlErr);
-        }
-      }
-    );
-  });
+  return uploadToCloudinary(fileOrBlob, fileName, 'site_logos', onProgress);
 }
 
 /**
- * Uploads a user profile photo to Firebase Storage at `users/<uid>/profile_<timestamp>`
+ * Upload user profile photo helper
  */
 export async function uploadUserProfilePhoto(
   uid: string,
@@ -115,47 +161,12 @@ export async function uploadUserProfilePhoto(
   fileName: string,
   onProgress?: UploadProgressCallback
 ): Promise<string> {
-  const timestamp = Date.now();
-  const cleanName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const storagePath = `users/${uid}/profile_${timestamp}_${cleanName}`;
-  const storageRef = ref(storage, storagePath);
-
-  const uploadTask = uploadBytesResumable(storageRef, fileOrBlob);
-
-  return new Promise((resolve, reject) => {
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-        if (onProgress) {
-          onProgress(progress);
-        }
-      },
-      (error) => {
-        console.error('Firebase Storage User Photo Upload Error:', error);
-        reject(error);
-      },
-      async () => {
-        try {
-          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(downloadUrl);
-        } catch (urlErr) {
-          reject(urlErr);
-        }
-      }
-    );
-  });
+  return uploadToCloudinary(fileOrBlob, fileName, `users/${uid}`, onProgress);
 }
 
 /**
- * Deletes a storage file by full URL if it is hosted on Firebase Storage
+ * No-op deletion for client-side Cloudinary unsigned storage
  */
-export async function deleteStorageFileByUrl(url: string): Promise<void> {
-  if (!url || !url.includes('firebasestorage.googleapis.com')) return;
-  try {
-    const storageRef = ref(storage, url);
-    await deleteObject(storageRef);
-  } catch (err) {
-    console.warn('Firebase Storage file delete notice:', err);
-  }
+export async function deleteStorageFileByUrl(_url: string): Promise<void> {
+  // Client-side unsigned API cannot delete assets directly (requires API secret).
 }

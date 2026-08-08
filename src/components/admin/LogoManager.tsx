@@ -16,11 +16,18 @@ import {
   ShieldCheck,
   RefreshCw,
   X,
+  Cloud,
+  Key,
+  Settings,
+  User,
+  Sliders,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLogo } from '../../context/LogoContext';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../Toast';
-import { compressImage, uploadSiteLogo, deleteStorageFileByUrl } from '../../services/storageService';
+import { compressImage, uploadSiteLogo } from '../../services/storageService';
+import { promptStore } from '../../services/promptStore';
 
 // Preset default icons/gallery logos for fast selection
 const GALLERY_PRESETS = [
@@ -48,6 +55,7 @@ const GALLERY_PRESETS = [
 
 export const LogoManager: React.FC = () => {
   const { logoUrl, saveLogo, restoreDefaultLogo, deleteLogo } = useLogo();
+  const { isAdmin } = useAuth();
   const { showToast } = useToast();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -58,20 +66,45 @@ export const LogoManager: React.FC = () => {
   const [uploading, setUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'upload' | 'gallery'>('upload');
+  const [showConfig, setShowConfig] = useState<boolean>(false);
 
-  // Simple Crop & Resize Controls State
+  // Cloudinary Config state
+  const initialCldSettings = promptStore.getCloudinarySettings();
+  const [cloudNameInput, setCloudNameInput] = useState<string>(initialCldSettings.cloudName || 'dju83ksjw');
+  const [uploadPresetInput, setUploadPresetInput] = useState<string>(initialCldSettings.uploadPreset || 'sahil_edits_preset');
+
+  // Crop & Resize Controls State
   const [cropZoom, setCropZoom] = useState<number>(1);
   const [cropAspect, setCropAspect] = useState<'square' | 'rounded' | 'circle'>('rounded');
+
+  // Save Cloudinary credentials
+  const handleSaveCloudinaryConfig = async () => {
+    if (!isAdmin) {
+      showToast('Admin Privilege Required', 'Only authenticated Admins can update Cloudinary settings.', 'error');
+      return;
+    }
+
+    try {
+      await promptStore.updateCloudinarySettings({
+        cloudName: cloudNameInput.trim(),
+        uploadPreset: uploadPresetInput.trim(),
+      });
+      showToast('Cloudinary Config Saved!', 'Unsigned API settings updated.', 'success');
+      setShowConfig(false);
+    } catch (err: any) {
+      showToast('Config Error', err?.message || 'Could not update Cloudinary settings', 'error');
+    }
+  };
 
   // Handle image selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. Validate File Size (Max 5MB)
-    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+    // 1. Validate File Size (Max 10MB)
+    const maxSizeBytes = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSizeBytes) {
-      showToast('File Too Large', 'Maximum allowed image size is 5MB.', 'error');
+      showToast('File Too Large', 'Maximum allowed image size is 10MB.', 'error');
       return;
     }
 
@@ -80,7 +113,7 @@ export const LogoManager: React.FC = () => {
     if (!allowedTypes.includes(file.type.toLowerCase())) {
       showToast(
         'Invalid File Type',
-        'Only PNG, JPG, JPEG, WebP, and SVG files are allowed.',
+        'Only PNG, JPG, JPEG, WEBP, and SVG files are allowed.',
         'error'
       );
       return;
@@ -101,7 +134,6 @@ export const LogoManager: React.FC = () => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      // Simulate input change
       const dt = new DataTransfer();
       dt.items.add(file);
       if (fileInputRef.current) {
@@ -111,8 +143,13 @@ export const LogoManager: React.FC = () => {
     }
   };
 
-  // Upload and Save Logo
+  // Upload and Save Logo to Cloudinary + Firestore settings/site
   const handleSaveLogo = async () => {
+    if (!isAdmin) {
+      showToast('Admin Privilege Required', 'Only Admins can modify the site logo.', 'error');
+      return;
+    }
+
     if (!selectedFile && !previewUrl) {
       showToast('No Logo Selected', 'Please choose or upload a logo first.', 'error');
       return;
@@ -125,31 +162,31 @@ export const LogoManager: React.FC = () => {
       let finalUrl = previewUrl || '';
 
       if (selectedFile) {
-        // Compress large image before uploading (Skip SVGs)
+        // 1. Compress image before uploading (Skip SVGs)
         setUploadProgress(10);
         const compressedBlob = await compressImage(selectedFile, 800, 800, 0.9);
 
-        // Upload to Firebase Storage
-        setUploadProgress(30);
+        // 2. Direct Unsigned Upload to Cloudinary Free CDN
+        setUploadProgress(20);
         finalUrl = await uploadSiteLogo(compressedBlob, selectedFile.name, (prog) => {
-          setUploadProgress(30 + Math.round(prog * 0.6));
+          setUploadProgress(20 + Math.round(prog * 0.7));
         });
       }
 
       setUploadProgress(95);
 
-      // Save URL to Firestore document settings/site
+      // 3. Save URL to Firestore document `settings/site`
       await saveLogo(finalUrl);
 
       setUploadProgress(100);
-      showToast('Logo Updated Successfully!', 'Your new site logo is live everywhere.', 'success');
+      showToast('Logo Saved & Published!', 'Cloudinary secure_url stored in Firestore settings/site.', 'success');
 
       // Clear local upload state
       setSelectedFile(null);
       setPreviewUrl(null);
     } catch (err: any) {
       console.error('Logo upload error:', err);
-      showToast('Upload Failed', err?.message || 'Error uploading logo to Firebase Storage.', 'error');
+      showToast('Upload Failed', err?.message || 'Error uploading logo to Cloudinary.', 'error');
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -158,10 +195,15 @@ export const LogoManager: React.FC = () => {
 
   // Select preset from gallery
   const handleSelectPreset = async (presetUrl: string) => {
+    if (!isAdmin) {
+      showToast('Admin Privilege Required', 'Only Admins can change site branding.', 'error');
+      return;
+    }
+
     setUploading(true);
     try {
       await saveLogo(presetUrl);
-      showToast('Gallery Logo Selected!', 'Site logo updated successfully.', 'success');
+      showToast('Gallery Logo Selected!', 'Site logo updated in Firestore settings/site.', 'success');
       setPreviewUrl(null);
       setSelectedFile(null);
     } catch (err: any) {
@@ -173,6 +215,11 @@ export const LogoManager: React.FC = () => {
 
   // Delete current logo
   const handleDeleteCurrentLogo = async () => {
+    if (!isAdmin) {
+      showToast('Admin Privilege Required', 'Only Admins can delete the site logo.', 'error');
+      return;
+    }
+
     if (!logoUrl) {
       showToast('No Custom Logo', 'Site is already using default branding icon.', 'info');
       return;
@@ -180,10 +227,8 @@ export const LogoManager: React.FC = () => {
 
     setUploading(true);
     try {
-      // If it was stored in Firebase Storage, clean it up
-      await deleteStorageFileByUrl(logoUrl);
       await deleteLogo();
-      showToast('Logo Deleted', 'Restored default site branding.', 'success');
+      showToast('Logo Deleted', 'Restored default site branding in Firestore settings/site.', 'success');
       setPreviewUrl(null);
       setSelectedFile(null);
     } catch (err: any) {
@@ -195,6 +240,11 @@ export const LogoManager: React.FC = () => {
 
   // Restore default logo
   const handleRestoreDefault = async () => {
+    if (!isAdmin) {
+      showToast('Admin Privilege Required', 'Only Admins can restore default logo.', 'error');
+      return;
+    }
+
     setUploading(true);
     try {
       await restoreDefaultLogo();
@@ -214,37 +264,114 @@ export const LogoManager: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-blue-900/40 via-indigo-900/30 to-purple-900/40 border border-blue-500/20 backdrop-blur-xl shadow-xl">
         <div className="space-y-1.5">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Admin Control Panel</span>
+            <Cloud className="w-3.5 h-3.5" />
+            <span>Cloudinary Free Engine</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Logo & Brand Management
+            Logo &amp; Brand Management
           </h2>
           <p className="text-xs sm:text-sm text-zinc-300 max-w-xl">
-            Upload, crop, preview, or restore your site branding. All changes update in real-time across Navbar, Login, Footer, Splash, and Favicons.
+            Upload custom logos directly to Cloudinary Free using Unsigned Upload API. Saves secure_url to Firestore <code className="bg-blue-950/80 px-1.5 py-0.5 rounded text-blue-200">settings/site</code> for instant site-wide syncing.
           </p>
         </div>
 
-        {/* Live Logo Status Pill */}
-        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-zinc-900/80 border border-zinc-800 shrink-0">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center p-1 overflow-hidden border border-white/20 shadow-inner">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Live Logo" className="w-full h-full object-contain rounded-lg" />
-            ) : (
-              <Sparkles className="w-6 h-6 text-white" />
-            )}
-          </div>
-          <div>
-            <span className="text-[10px] uppercase font-extrabold text-zinc-400 tracking-wider block">
-              Active Logo
-            </span>
-            <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {logoUrl ? 'Custom Logo' : 'Default System Logo'}
-            </span>
+        {/* Live Logo Status Pill & Config Toggle */}
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={() => setShowConfig(!showConfig)}
+            className="p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors flex items-center gap-2 text-xs font-bold"
+            title="Configure Cloudinary API Keys"
+          >
+            <Settings className="w-4 h-4 text-blue-400" />
+            <span className="hidden sm:inline">Settings</span>
+          </button>
+
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-zinc-900/80 border border-zinc-800">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center p-1 overflow-hidden border border-white/20 shadow-inner">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Live Logo" className="w-full h-full object-contain rounded-lg" />
+              ) : (
+                <Sparkles className="w-6 h-6 text-white" />
+              )}
+            </div>
+            <div>
+              <span className="text-[10px] uppercase font-extrabold text-zinc-400 tracking-wider block">
+                Firestore Logo
+              </span>
+              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {logoUrl ? 'Cloudinary Active' : 'Default Icon'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Cloudinary Config Drawer */}
+      <AnimatePresence>
+        {showConfig && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="p-6 rounded-3xl bg-zinc-900/90 border border-blue-500/30 shadow-2xl space-y-4 overflow-hidden"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-bold text-white">
+                <Key className="w-4 h-4 text-blue-400" />
+                <span>Cloudinary Unsigned Credentials</span>
+              </div>
+              <button
+                onClick={() => setShowConfig(false)}
+                className="text-xs text-zinc-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-zinc-400">
+              Configure your free Cloudinary account credentials. Uploads use the unsigned API endpoint without requiring secret server keys.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-bold text-zinc-300 block mb-1">
+                  Cloud Name <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={cloudNameInput}
+                  onChange={(e) => setCloudNameInput(e.target.value)}
+                  placeholder="e.g. dju83ksjw"
+                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-semibold text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-zinc-300 block mb-1">
+                  Unsigned Upload Preset <span className="text-rose-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={uploadPresetInput}
+                  onChange={(e) => setUploadPresetInput(e.target.value)}
+                  placeholder="e.g. sahil_edits_preset"
+                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-semibold text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={handleSaveCloudinaryConfig}
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition-colors"
+              >
+                Save Cloudinary Credentials
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Grid: Left Controls & Right Real-Time Previews */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -301,22 +428,22 @@ export const LogoManager: React.FC = () => {
 
                   <div className="space-y-1">
                     <p className="text-sm font-bold text-zinc-200 group-hover:text-blue-400 transition-colors">
-                      Click to upload or drag & drop logo
+                      Click to upload or drag &amp; drop logo
                     </p>
                     <p className="text-xs text-zinc-400">
-                      Supports <strong className="text-zinc-300">PNG, JPG, JPEG, WEBP, SVG</strong> (Max 5MB)
+                      Supports <strong className="text-zinc-300">PNG, JPG, JPEG, WEBP, SVG</strong> (Max 10MB)
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Upload Progress Bar */}
-              {uploading && uploadProgress > 0 && (
+              {uploading && (
                 <div className="space-y-2 p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800">
                   <div className="flex justify-between items-center text-xs font-bold text-zinc-300">
                     <span className="flex items-center gap-2">
                       <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
-                      Uploading & Syncing to Firebase Storage...
+                      Uploading to Cloudinary Free CDN &amp; Syncing Firestore...
                     </span>
                     <span className="text-blue-400">{uploadProgress}%</span>
                   </div>
@@ -335,7 +462,7 @@ export const LogoManager: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-zinc-300 flex items-center gap-2">
                       <Crop className="w-4 h-4 text-blue-400" />
-                      Crop & Scale Adjustment
+                      Crop, Aspect &amp; Scale Adjustment
                     </span>
                     <button
                       onClick={() => {
@@ -358,7 +485,7 @@ export const LogoManager: React.FC = () => {
                           ? 'rounded-2xl border-2 border-blue-500'
                           : 'rounded-none border-2 border-blue-500'
                       }`}
-                      style={{ width: 100, height: 100 }}
+                      style={{ width: 110, height: 110 }}
                     >
                       <img
                         src={previewUrl}
@@ -427,17 +554,17 @@ export const LogoManager: React.FC = () => {
                 <button
                   onClick={handleSaveLogo}
                   disabled={uploading || (!selectedFile && !previewUrl)}
-                  className="flex-1 min-w-[180px] flex items-center justify-center gap-2 py-3 px-6 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 min-w-[180px] flex items-center justify-center gap-2 py-3 px-6 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-blue-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {uploading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Saving to Firestore...</span>
+                      <span>Saving to Cloudinary &amp; Firestore...</span>
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      <span>Save & Publish Logo</span>
+                      <span>Upload &amp; Save Logo</span>
                     </>
                   )}
                 </button>
@@ -446,7 +573,7 @@ export const LogoManager: React.FC = () => {
                   <button
                     onClick={handleRestoreDefault}
                     disabled={uploading}
-                    className="flex items-center gap-2 py-3 px-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 py-3 px-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     <RotateCcw className="w-4 h-4 text-blue-400" />
                     <span>Restore Default</span>
@@ -455,7 +582,7 @@ export const LogoManager: React.FC = () => {
                   <button
                     onClick={handleDeleteCurrentLogo}
                     disabled={uploading || !logoUrl}
-                    className="flex items-center gap-2 py-3 px-4 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs border border-rose-500/20 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 py-3 px-4 rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-xs border border-rose-500/20 transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                     <span>Delete Logo</span>
@@ -471,7 +598,7 @@ export const LogoManager: React.FC = () => {
               <div className="space-y-1">
                 <h3 className="font-bold text-base text-zinc-100">Select Preset Brand Badge</h3>
                 <p className="text-xs text-zinc-400">
-                  Pick a pre-made vector/abstract icon to instantly set as your site logo.
+                  Pick a pre-made vector/abstract icon to instantly set as your site logo in Firestore <code className="bg-zinc-950 px-1 py-0.5 rounded text-blue-300">settings/site</code>.
                 </p>
               </div>
 
@@ -521,7 +648,7 @@ export const LogoManager: React.FC = () => {
             </div>
 
             <p className="text-xs text-zinc-400">
-              Preview how your logo automatically renders on different components across the website:
+              Preview how your Cloudinary logo automatically renders on every component across the application:
             </p>
 
             {/* Preview 1: Header / Navbar */}
@@ -593,7 +720,7 @@ export const LogoManager: React.FC = () => {
             <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 flex items-start gap-3">
               <ShieldCheck className="w-5 h-5 shrink-0 text-blue-400 mt-0.5" />
               <p>
-                Stored securely in Firestore collection <code className="bg-blue-950 px-1 py-0.5 rounded text-blue-200">settings/site</code> and uploaded to Firebase Storage. Restricted exclusively to authenticated Admins.
+                Direct Cloudinary Free unsigned uploads. Securely syncs logoUrl to Firestore <code className="bg-blue-950 px-1 py-0.5 rounded text-blue-200">settings/site</code>. Zero Firebase Storage dependency. Restricted exclusively to authenticated Admins.
               </p>
             </div>
           </div>
