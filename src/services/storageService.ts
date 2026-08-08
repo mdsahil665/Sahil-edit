@@ -75,12 +75,12 @@ export async function compressImage(
 export async function uploadToCloudinary(
   fileOrBlob: File | Blob,
   fileName: string,
-  folder = 'site_logos',
+  _folder = '',
   onProgress?: UploadProgressCallback
 ): Promise<string> {
   const cldSettings = promptStore.getCloudinarySettings();
-  const cloudName = cldSettings.cloudName?.trim() || 'dju83ksjw';
-  const uploadPreset = cldSettings.uploadPreset?.trim() || 'sahil_edits_preset';
+  const cloudName = cldSettings.cloudName?.trim() || 'dvahk0xom';
+  const uploadPreset = cldSettings.uploadPreset?.trim() || 'sahil_logo';
 
   if (!cloudName || !uploadPreset) {
     throw new Error('Cloudinary Cloud Name or Upload Preset is missing. Please configure in Admin Settings.');
@@ -94,9 +94,6 @@ export async function uploadToCloudinary(
 
   formData.append('file', fileToUpload);
   formData.append('upload_preset', uploadPreset);
-  if (folder) {
-    formData.append('folder', folder);
-  }
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();

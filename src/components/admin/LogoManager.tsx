@@ -70,8 +70,8 @@ export const LogoManager: React.FC = () => {
 
   // Cloudinary Config state
   const initialCldSettings = promptStore.getCloudinarySettings();
-  const [cloudNameInput, setCloudNameInput] = useState<string>(initialCldSettings.cloudName || 'dju83ksjw');
-  const [uploadPresetInput, setUploadPresetInput] = useState<string>(initialCldSettings.uploadPreset || 'sahil_edits_preset');
+  const [cloudNameInput, setCloudNameInput] = useState<string>(initialCldSettings.cloudName || 'dvahk0xom');
+  const [uploadPresetInput, setUploadPresetInput] = useState<string>(initialCldSettings.uploadPreset || 'sahil_logo');
 
   // Crop & Resize Controls State
   const [cropZoom, setCropZoom] = useState<number>(1);
@@ -342,7 +342,7 @@ export const LogoManager: React.FC = () => {
                   type="text"
                   value={cloudNameInput}
                   onChange={(e) => setCloudNameInput(e.target.value)}
-                  placeholder="e.g. dju83ksjw"
+                  placeholder="e.g. dvahk0xom"
                   className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-semibold text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -355,7 +355,7 @@ export const LogoManager: React.FC = () => {
                   type="text"
                   value={uploadPresetInput}
                   onChange={(e) => setUploadPresetInput(e.target.value)}
-                  placeholder="e.g. sahil_edits_preset"
+                  placeholder="e.g. sahil_logo"
                   className="w-full px-4 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-semibold text-white focus:outline-none focus:border-blue-500"
                 />
               </div>

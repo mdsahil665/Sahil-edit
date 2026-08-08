@@ -86,9 +86,9 @@ const DEFAULT_WEBSITE_SETTINGS: WebsiteSettings = {
 };
 
 const DEFAULT_CLOUDINARY_SETTINGS: CloudinarySettings = {
-  cloudName: 'dju83ksjw',
-  uploadPreset: 'sahil_edits_preset',
-  folder: 'site_logos',
+  cloudName: 'dvahk0xom',
+  uploadPreset: 'sahil_logo',
+  folder: '',
 };
 
 const DEFAULT_COMMENTS_SETTINGS: CommentsSettings = {
@@ -1085,7 +1085,9 @@ class PromptStore {
   }
 
   public async uploadToCloudinary(file: File): Promise<{ success: boolean; url?: string; error?: string }> {
-    const { cloudName, uploadPreset } = this.cloudinarySettingsCache;
+    const cloudName = this.cloudinarySettingsCache.cloudName?.trim() || 'dvahk0xom';
+    const uploadPreset = this.cloudinarySettingsCache.uploadPreset?.trim() || 'sahil_logo';
+
     if (!cloudName || !uploadPreset) {
       return {
         success: false,
@@ -1097,9 +1099,6 @@ class PromptStore {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', uploadPreset);
-      if (this.cloudinarySettingsCache.folder) {
-        formData.append('folder', this.cloudinarySettingsCache.folder);
-      }
 
       const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: 'POST',

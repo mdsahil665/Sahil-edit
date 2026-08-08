@@ -22,10 +22,9 @@ VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 
-# Cloudinary Integration
-VITE_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
-VITE_CLOUDINARY_API_KEY=your_cloudinary_api_key
+# Cloudinary Integration (Free Unsigned API)
+VITE_CLOUDINARY_CLOUD_NAME=dvahk0xom
+VITE_CLOUDINARY_UPLOAD_PRESET=sahil_logo
 
 # Admin Master Access
 VITE_ADMIN_PASSCODE=your_admin_passcode
