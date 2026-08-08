@@ -168,6 +168,7 @@ export interface SocialMediaLinks {
   youtube: string;
   twitter: string;
   github: string;
+  discord?: string;
 }
 
 export interface WebsiteSettings {

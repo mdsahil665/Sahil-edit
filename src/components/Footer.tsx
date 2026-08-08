@@ -1,9 +1,27 @@
-import React from 'react';
-import { Sparkles, Instagram, Facebook, Github, Youtube, ArrowUp, Zap, ShieldCheck, Heart } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Sparkles,
+  Instagram,
+  Facebook,
+  Github,
+  Youtube,
+  ArrowUp,
+  Zap,
+  ShieldCheck,
+  Heart,
+  CheckCircle2,
+  Mail,
+  ArrowRight,
+  Layers,
+  FileText,
+  Info,
+  Lock,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { CustomPage } from '../types';
 import { promptStore } from '../services/promptStore';
 import { AdBanner } from './AdBanner';
+import { useToast } from './Toast';
 
 interface FooterProps {
   onOpenPage: (page: CustomPage) => void;
@@ -23,196 +41,375 @@ const TelegramIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
   </svg>
 );
 
-// Custom WhatsApp Icon
-const WhatsAppIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
+// Custom Discord Icon
+const DiscordIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c-.001 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
   </svg>
 );
 
-const formatSocialUrl = (url?: string, platform?: string) => {
-  if (!url || !url.trim()) return '';
+const formatSocialUrl = (url?: string, platform?: string, fallbackHandle?: string) => {
+  if (!url || !url.trim()) {
+    if (fallbackHandle) {
+      if (platform === 'instagram') return `https://instagram.com/${fallbackHandle}`;
+      if (platform === 'facebook') return `https://facebook.com/${fallbackHandle}`;
+      if (platform === 'twitter') return `https://x.com/${fallbackHandle}`;
+      if (platform === 'telegram') return `https://t.me/${fallbackHandle}`;
+      if (platform === 'discord') return `https://discord.gg/${fallbackHandle}`;
+      if (platform === 'github') return `https://github.com/${fallbackHandle}`;
+    }
+    return '#';
+  }
   const trimmed = url.trim();
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   if (trimmed.startsWith('@')) {
     const handle = trimmed.substring(1);
     if (platform === 'instagram') return `https://instagram.com/${handle}`;
     if (platform === 'facebook') return `https://facebook.com/${handle}`;
-    if (platform === 'twitter') return `https://twitter.com/${handle}`;
+    if (platform === 'twitter') return `https://x.com/${handle}`;
     if (platform === 'telegram') return `https://t.me/${handle}`;
+    if (platform === 'discord') return `https://discord.gg/${handle}`;
     if (platform === 'youtube') return `https://youtube.com/@${handle}`;
+    if (platform === 'github') return `https://github.com/${handle}`;
     return `https://${platform || 'instagram'}.com/${handle}`;
   }
   if (!trimmed.includes('.')) {
     if (platform === 'instagram') return `https://instagram.com/${trimmed}`;
     if (platform === 'facebook') return `https://facebook.com/${trimmed}`;
-    if (platform === 'twitter') return `https://twitter.com/${trimmed}`;
+    if (platform === 'twitter') return `https://x.com/${trimmed}`;
     if (platform === 'telegram') return `https://t.me/${trimmed}`;
+    if (platform === 'discord') return `https://discord.gg/${trimmed}`;
     if (platform === 'youtube') return `https://youtube.com/@${trimmed}`;
+    if (platform === 'github') return `https://github.com/${trimmed}`;
   }
   return `https://${trimmed}`;
 };
 
 export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
-  const pages = promptStore.getPages().filter((p) => p.status === 'published');
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const { showToast } = useToast();
+
+  const publishedPages = promptStore.getPages().filter((p) => p.status === 'published');
   const monetizationSettings = promptStore.getMonetization();
   const websiteSettings = promptStore.getWebsiteSettings();
   const fc = promptStore.getFeatureControls();
   const social = websiteSettings.socialLinks;
   const footerText = websiteSettings.footerText || '© 2026 Sahil Edits. All Rights Reserved.';
 
-  const socialItems = [
-    {
-      id: 'instagram',
-      label: 'Instagram',
-      url: formatSocialUrl(social?.instagram, 'instagram'),
-      icon: <Instagram className="w-4 h-4" />,
-      hoverClass: 'hover:text-pink-500 hover:bg-pink-500/10 hover:border-pink-500/30',
-      enabled: fc.instagramToggle,
-    },
-    {
-      id: 'facebook',
-      label: 'Facebook',
-      url: formatSocialUrl(social?.facebook),
-      icon: <Facebook className="w-4 h-4" />,
-      hoverClass: 'hover:text-blue-500 hover:bg-blue-500/10 hover:border-blue-500/30',
-      enabled: fc.facebookToggle,
-    },
-    {
-      id: 'whatsapp',
-      label: 'WhatsApp',
-      url: formatSocialUrl(social?.whatsapp),
-      icon: <WhatsAppIcon className="w-4 h-4" />,
-      hoverClass: 'hover:text-emerald-500 hover:bg-emerald-500/10 hover:border-emerald-500/30',
-      enabled: fc.whatsappToggle,
-    },
-    {
-      id: 'telegram',
-      label: 'Telegram',
-      url: formatSocialUrl(social?.telegram),
-      icon: <TelegramIcon className="w-4 h-4" />,
-      hoverClass: 'hover:text-sky-500 hover:bg-sky-500/10 hover:border-sky-500/30',
-      enabled: fc.telegramToggle,
-    },
-    {
-      id: 'youtube',
-      label: 'YouTube',
-      url: formatSocialUrl(social?.youtube),
-      icon: <Youtube className="w-4 h-4" />,
-      hoverClass: 'hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/30',
-      enabled: fc.youtubeToggle,
-    },
-    {
-      id: 'twitter',
-      label: 'X (Twitter)',
-      url: formatSocialUrl(social?.twitter),
-      icon: <XIcon className="w-4 h-4" />,
-      hoverClass: 'hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:border-zinc-400',
-      enabled: fc.twitterToggle,
-    },
-    {
-      id: 'github',
-      label: 'GitHub',
-      url: formatSocialUrl(social?.github),
-      icon: <Github className="w-4 h-4" />,
-      hoverClass: 'hover:text-purple-500 hover:bg-purple-500/10 hover:border-purple-500/30',
-      enabled: fc.githubToggle,
-    },
-  ].filter((item) => Boolean(item.url) && item.enabled !== false && fc.footerSocialLinks !== false);
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.includes('@')) {
+      showToast('Error', 'Please enter a valid email address.', 'error');
+      return;
+    }
+    showToast('✓ Subscribed!', 'Thank you for subscribing to Sahil Edits updates.');
+    setNewsletterEmail('');
+  };
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Function to find existing page or construct a clean system page for Privacy / Terms / Contact / About
+  const openOrCreatePage = (title: string, slug: string, defaultContent: string) => {
+    const existing = publishedPages.find(
+      (p) => p.slug === slug || p.title.toLowerCase() === title.toLowerCase()
+    );
+    if (existing) {
+      onOpenPage(existing);
+    } else {
+      onOpenPage({
+        id: slug,
+        title,
+        slug,
+        content: defaultContent,
+        status: 'published',
+        isSystem: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  };
+
+  // Social items list (Instagram, Facebook, Telegram, Discord, GitHub, X (Twitter))
+  const socialItems = [
+    {
+      id: 'instagram',
+      label: 'Instagram',
+      url: formatSocialUrl(social?.instagram, 'instagram', 'sahiledits'),
+      icon: <Instagram className="w-5 h-5" />,
+      enabled: fc.instagramToggle,
+    },
+    {
+      id: 'facebook',
+      label: 'Facebook',
+      url: formatSocialUrl(social?.facebook, 'facebook', 'sahiledits'),
+      icon: <Facebook className="w-5 h-5" />,
+      enabled: fc.facebookToggle,
+    },
+    {
+      id: 'telegram',
+      label: 'Telegram',
+      url: formatSocialUrl(social?.telegram, 'telegram', 'sahiledits'),
+      icon: <TelegramIcon className="w-5 h-5" />,
+      enabled: fc.telegramToggle,
+    },
+    {
+      id: 'discord',
+      label: 'Discord',
+      url: formatSocialUrl(social?.discord, 'discord', 'sahiledits'),
+      icon: <DiscordIcon className="w-5 h-5" />,
+      enabled: true,
+    },
+    {
+      id: 'github',
+      label: 'GitHub',
+      url: formatSocialUrl(social?.github, 'github', 'sahiledits'),
+      icon: <Github className="w-5 h-5" />,
+      enabled: fc.githubToggle,
+    },
+    {
+      id: 'twitter',
+      label: 'X (Twitter)',
+      url: formatSocialUrl(social?.twitter, 'twitter', 'sahiledits'),
+      icon: <XIcon className="w-5 h-5" />,
+      enabled: fc.twitterToggle,
+    },
+  ].filter((item) => item.enabled !== false && fc.footerSocialLinks !== false);
+
+  // Glowing badges array
+  const glowingBadges = [
+    { label: '1-Click Copy', icon: Zap, colorClass: 'from-blue-500/20 via-indigo-500/15 to-blue-600/20 text-blue-300 border-blue-500/30' },
+    { label: 'Verified Prompts', icon: ShieldCheck, colorClass: 'from-emerald-500/20 via-teal-500/15 to-emerald-600/20 text-emerald-300 border-emerald-500/30' },
+    { label: 'Daily Updates', icon: Sparkles, colorClass: 'from-purple-500/20 via-pink-500/15 to-purple-600/20 text-purple-300 border-purple-500/30' },
+    { label: '100% Free', icon: Heart, colorClass: 'from-amber-500/20 via-orange-500/15 to-amber-600/20 text-amber-300 border-amber-500/30' },
+  ];
+
+  // Quick Links items formatted as glass cards
+  const quickLinksList = [
+    {
+      title: 'Explore Prompts',
+      icon: Sparkles,
+      onClick: scrollToTop,
+    },
+    {
+      title: 'Categories',
+      icon: Layers,
+      onClick: () => {
+        const catEl = document.getElementById('categories-section');
+        if (catEl) catEl.scrollIntoView({ behavior: 'smooth' });
+        else scrollToTop();
+      },
+    },
+    {
+      title: 'Privacy Policy',
+      icon: Lock,
+      onClick: () =>
+        openOrCreatePage(
+          'Privacy Policy',
+          'privacy-policy',
+          '## Privacy Policy\n\nYour privacy is important to us. Sahil Edits does not sell or share personal user data. All prompt copying and interactions are encrypted and secured.'
+        ),
+    },
+    {
+      title: 'Terms of Service',
+      icon: FileText,
+      onClick: () =>
+        openOrCreatePage(
+          'Terms of Service',
+          'terms-of-service',
+          '## Terms of Service\n\nWelcome to Sahil Edits. By accessing our platform, you agree to use our AI prompt templates ethically and responsibly.'
+        ),
+    },
+    {
+      title: 'Contact Us',
+      icon: Mail,
+      onClick: () =>
+        openOrCreatePage(
+          'Contact Us',
+          'contact-us',
+          '## Contact Us\n\nHave questions or custom prompt requests? Reach out to us at support@sahiledits.com or connect via our social channels.'
+        ),
+    },
+    {
+      title: 'About Us',
+      icon: Info,
+      onClick: () =>
+        openOrCreatePage(
+          'About Us',
+          'about-us',
+          '## About Sahil Edits\n\nSahil Edits is the premier AI prompt library dedicated to helping creators, prompt engineers, and developers maximize their productivity.'
+        ),
+    },
+  ];
+
+  // Append dynamic published pages if any custom ones exist
+  publishedPages.forEach((p) => {
+    if (!quickLinksList.some((q) => q.title.toLowerCase() === p.title.toLowerCase())) {
+      quickLinksList.push({
+        title: p.title,
+        icon: FileText,
+        onClick: () => onOpenPage(p),
+      });
+    }
+  });
+
   return (
     <motion.footer
-      initial={{ opacity: 0, y: 24 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className="relative bg-gradient-to-b from-white via-zinc-50 to-zinc-100 dark:from-zinc-950 dark:via-zinc-900/90 dark:to-zinc-950 border-t border-zinc-200/80 dark:border-zinc-800/80 pt-14 pb-10 transition-colors duration-300 overflow-hidden"
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      className="relative bg-gradient-to-b from-[#0F172A] via-[#0F172A] to-[#111827] text-slate-100 rounded-t-[32px] sm:rounded-t-[40px] shadow-2xl border-t border-white/10 pt-14 pb-10 sm:pb-12 transition-colors duration-300 overflow-hidden"
     >
-      {/* Top Stylish Multi-Color Glow Accent Line */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 via-indigo-500 via-purple-500 to-transparent opacity-80" />
+      {/* Top Stylish Gradient Glow Accent Line */}
+      <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-500 via-indigo-500 via-purple-500 to-transparent opacity-80" />
 
-      {/* Decorative Subtle Background Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-32 bg-blue-500/5 dark:bg-blue-500/10 blur-3xl pointer-events-none rounded-full" />
+      {/* Ambient Soft Radial Background Glows */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-10">
-        {/* Footer Ad Banner */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12 sm:space-y-14">
+        {/* Optional Footer Ad Banner */}
         <AdBanner position="footerBanner" settings={monetizationSettings} />
 
-        {/* Main Grid Section */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
-          {/* Brand Info Section (5 cols) */}
-          <div className="md:col-span-5 text-center md:text-left space-y-4">
-            <div className="flex items-center justify-center md:justify-start gap-3">
+        {/* TOP SECTION: Brand Header & Badges */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 pb-8 border-b border-white/10">
+          <div className="space-y-4 max-w-2xl">
+            {/* Brand Logo & Name */}
+            <div className="flex items-center gap-3.5">
               <div className="relative group">
-                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 opacity-70 blur group-hover:opacity-100 transition duration-300" />
-                <div className="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-xl">
-                  <Sparkles className="w-5 h-5 animate-pulse" />
+                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 opacity-70 blur group-hover:opacity-100 transition duration-300" />
+                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl border border-white/20">
+                  <Sparkles className="w-6 h-6 animate-pulse" />
                 </div>
               </div>
               <div>
-                <h3 className="text-xl sm:text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
-                  {websiteSettings.websiteName || 'Sahil Edits'}
-                </h3>
-                <p className="text-[11px] font-bold tracking-widest text-blue-600 dark:text-blue-400 uppercase">
+                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
+                  <span>{websiteSettings.websiteName || 'Sahil Edits'}</span>
+                </h2>
+                <p className="text-xs font-bold tracking-widest text-blue-400 uppercase">
                   {websiteSettings.tagline || 'Premium AI Prompt Library'}
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-sm mx-auto md:mx-0">
-              Discover curated, high-converting AI prompts for Gemini, ChatGPT, Midjourney, and Bing. Copy instantly with 1-click precision.
+            <p className="text-sm text-slate-300 leading-relaxed font-normal">
+              Discover, copy, and master top-tier AI prompts for Gemini, ChatGPT, Midjourney, Bing &amp; more.
+              Engineered for creators, developers, and digital innovators.
             </p>
 
-            {/* Feature Pills */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60">
-                <Zap className="w-3 h-3 text-blue-500" /> 1-Click Copy
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
-                <ShieldCheck className="w-3 h-3 text-emerald-500" /> 100% Free
-              </span>
+            {/* Glowing Badges */}
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              {glowingBadges.map((badge) => {
+                const IconComp = badge.icon;
+                return (
+                  <span
+                    key={badge.label}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r ${badge.colorClass} border backdrop-blur-md shadow-lg shadow-black/20 hover:scale-105 transition-transform cursor-default`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white/90" />
+                    <IconComp className="w-3.5 h-3.5 opacity-80" />
+                    <span>{badge.label}</span>
+                  </span>
+                );
+              })}
             </div>
           </div>
 
-          {/* Quick Pages / Links Section (4 cols) */}
-          <div className="md:col-span-4 text-center md:text-left space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-              Quick Navigation
-            </h4>
+          {/* Back to Top Floating Circular Button */}
+          <div className="self-end lg:self-center shrink-0">
+            <button
+              onClick={scrollToTop}
+              aria-label="Back to top"
+              title="Back to top"
+              className="group flex items-center gap-3 px-5 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-blue-500/50 backdrop-blur-xl text-white font-semibold text-xs transition-all duration-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:-translate-y-1"
+            >
+              <span>Back to Top</span>
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:-rotate-6 transition-transform">
+                <ArrowUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
+              </div>
+            </button>
+          </div>
+        </div>
 
-            {pages.length > 0 ? (
-              <ul className="flex flex-col items-center md:items-start gap-2 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                {pages.map((page) => (
-                  <li key={page.id}>
-                    <button
-                      onClick={() => onOpenPage(page)}
-                      className="group inline-flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-white transition-colors"
-                    >
-                      <span className="text-blue-500/70 group-hover:translate-x-0.5 transition-transform">›</span>
-                      <span>{page.title}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">
-                Explore thousands of curated AI prompts on our main feed.
-              </p>
-            )}
+        {/* MIDDLE SECTION: Newsletter, Quick Links, Social Icons */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-start">
+          {/* Quick Links Section (2-Column Grid of Glass Cards) - 6 cols */}
+          <div className="lg:col-span-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                <Layers className="w-4 h-4 text-blue-400" />
+                <span>Quick Navigation</span>
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+              {quickLinksList.slice(0, 8).map((link) => {
+                const IconComponent = link.icon;
+                return (
+                  <button
+                    key={link.title}
+                    onClick={link.onClick}
+                    className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.03] hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/50 backdrop-blur-md flex items-center gap-3 text-xs font-semibold text-slate-200 hover:text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] text-left"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-white/[0.06] group-hover:bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 transition-colors">
+                      <IconComponent className="w-4 h-4" />
+                    </div>
+                    <span className="truncate">{link.title}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Connect & Socials Section (3 cols) */}
-          <div className="md:col-span-3 text-center md:text-left space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-              Stay Connected
-            </h4>
+          {/* Social Icons & Info Section - 6 cols */}
+          <div className="lg:col-span-6 space-y-6">
+            {/* Newsletter Subscription Card */}
+            <div className="p-6 sm:p-7 rounded-3xl bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden group">
+              <div className="absolute -right-12 -bottom-12 w-44 h-44 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all pointer-events-none" />
 
-            {socialItems.length > 0 ? (
-              <div className="flex items-center justify-center md:justify-start flex-wrap gap-2.5 pt-1">
+              <div className="relative z-10 space-y-4">
+                <div className="space-y-1">
+                  <h4 className="text-base font-bold text-white flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-blue-400" />
+                    <span>Join Our Prompt Newsletter</span>
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Get weekly high-converting AI prompts and editing tips delivered straight to your inbox.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row items-center gap-2.5">
+                  <div className="relative w-full">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="email"
+                      required
+                      value={newsletterEmail}
+                      onChange={(e) => setNewsletterEmail(e.target.value)}
+                      placeholder="Enter your email address..."
+                      className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/[0.06] border border-white/15 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 text-xs text-white placeholder-slate-400 focus:outline-none backdrop-blur-md transition-all"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0"
+                  >
+                    <span>Subscribe</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Social Media Section (Modern Circular Glass Icons) */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Connect With Us
+              </h3>
+
+              <div className="flex items-center flex-wrap gap-3">
                 {socialItems.map((item) => (
                   <a
                     key={item.id}
@@ -221,36 +418,63 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
                     rel="noopener noreferrer"
                     aria-label={item.label}
                     title={item.label}
-                    className={`p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 text-zinc-600 dark:text-zinc-400 shadow-sm hover:scale-110 hover:shadow-md transition-all duration-200 ${item.hoverClass}`}
+                    className="w-11 h-11 rounded-full bg-white/[0.05] backdrop-blur-md border border-white/10 text-slate-300 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-6 hover:text-blue-400 hover:border-blue-400/60 hover:bg-blue-500/10 hover:shadow-[0_0_18px_rgba(59,130,246,0.5)]"
                   >
                     {item.icon}
                   </a>
                 ))}
               </div>
-            ) : (
-              <p className="text-xs text-zinc-400 dark:text-zinc-500">
-                Follow us for daily AI editing tips and fresh prompt drops.
-              </p>
-            )}
-
-            <div className="pt-2">
-              <button
-                onClick={scrollToTop}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-zinc-200/70 dark:bg-zinc-800/80 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-zinc-700 dark:text-zinc-300 transition-all shadow-sm"
-              >
-                <ArrowUp className="w-3.5 h-3.5" /> Back to top
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Copyright Bottom Bar */}
-        <div className="pt-6 border-t border-zinc-200/80 dark:border-zinc-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-400 dark:text-zinc-500 font-medium">
-          <div>{footerText}</div>
-          <div className="flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500">
-            <span>Crafted with</span>
-            <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" />
-            <span>for AI Creators</span>
+        {/* BOTTOM BAR: Thin Divider, Copyright, Policy Links */}
+        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
+          {/* Left Copyright */}
+          <div className="text-center sm:text-left">
+            {footerText}
+          </div>
+
+          {/* Right Policy Links */}
+          <div className="flex items-center gap-3 text-slate-300">
+            <button
+              onClick={() =>
+                openOrCreatePage(
+                  'Privacy Policy',
+                  'privacy-policy',
+                  '## Privacy Policy\n\nYour privacy is important to us. Sahil Edits does not sell or share personal user data. All prompt copying and interactions are encrypted and secured.'
+                )
+              }
+              className="hover:text-blue-400 transition-colors"
+            >
+              Privacy
+            </button>
+            <span className="text-slate-600">•</span>
+            <button
+              onClick={() =>
+                openOrCreatePage(
+                  'Terms of Service',
+                  'terms-of-service',
+                  '## Terms of Service\n\nWelcome to Sahil Edits. By accessing our platform, you agree to use our AI prompt templates ethically and responsibly.'
+                )
+              }
+              className="hover:text-blue-400 transition-colors"
+            >
+              Terms
+            </button>
+            <span className="text-slate-600">•</span>
+            <button
+              onClick={() =>
+                openOrCreatePage(
+                  'Contact Us',
+                  'contact-us',
+                  '## Contact Us\n\nHave questions or custom prompt requests? Reach out to us at support@sahiledits.com or connect via our social channels.'
+                )
+              }
+              className="hover:text-blue-400 transition-colors"
+            >
+              Contact
+            </button>
           </div>
         </div>
       </div>
