@@ -260,12 +260,13 @@ export const Footer: React.FC<FooterProps> = React.memo(({ onOpenPage }) => {
     <footer
       aria-label="Site Footer"
       style={{ minHeight: 'auto' }}
-      className={`w-full bg-[#0F172A] bg-gradient-to-b from-[#0F172A] via-[#0F172A] to-[#111827] text-slate-100 rounded-t-[32px] sm:rounded-t-[40px] shadow-2xl border-t border-white/10 pt-12 ${
+      className={`w-full bg-[#0F172A] bg-gradient-to-b from-[#0F172A] via-[#0F172A] to-[#111827] text-slate-100 rounded-t-[2.5rem] sm:rounded-t-[3.5rem] lg:rounded-t-[4.5rem] shadow-[0_-25px_60px_-15px_rgba(0,0,0,0.35)] border-t border-white/15 -mt-10 sm:-mt-14 lg:-mt-16 relative z-30 pt-14 sm:pt-16 ${
         hasStickyBanner ? 'pb-24 sm:pb-16' : 'pb-12'
-      } relative overflow-hidden transition-colors duration-300`}
+      } overflow-hidden transition-all duration-300`}
     >
-      {/* Top Stylish Gradient Glow Accent Line */}
-      <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-500 via-indigo-500 via-purple-500 to-transparent opacity-80" />
+      {/* Top Stylish Gradient Glow Accent Line & Ambient Curve Overlay */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 via-indigo-500 via-purple-500 to-transparent opacity-90 z-20" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-24 bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 blur-2xl pointer-events-none rounded-full" />
 
       {/* Ambient Soft Background Glows */}
       <div className="absolute top-0 left-1/4 w-72 h-72 sm:w-80 sm:h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />

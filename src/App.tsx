@@ -361,7 +361,7 @@ function AppContent() {
         />
 
         {/* 2. Main Feed Container (Max width 1400px / 1600px ultra-wide) */}
-        <main className="w-full max-w-[1400px] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-16 sm:pb-24 flex-1">
+        <main className="w-full max-w-[1400px] 2xl:max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-6 sm:pb-10 flex-1 relative">
           {/* Welcome Desktop Hero Section */}
           {featureControls.homepageBanner && (
             <section className="pt-4 sm:pt-8 pb-14 sm:pb-20 relative">
@@ -486,7 +486,7 @@ function AppContent() {
           {/* LATEST POSTS SECTION WITH OVERLAP DESIGN */}
           <section
             id="latest-posts-section"
-            className="-mt-6 sm:-mt-10 relative z-20 rounded-[32px] sm:rounded-[2.5rem] bg-white/90 dark:bg-zinc-950/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl backdrop-blur-2xl p-6 sm:p-10 lg:p-12 mb-12 sm:mb-16"
+            className="-mt-6 sm:-mt-10 relative z-20 rounded-[32px] sm:rounded-[2.5rem] bg-white/90 dark:bg-zinc-950/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-2xl backdrop-blur-2xl p-6 sm:p-10 lg:p-12 mb-6 sm:mb-8"
           >
             {/* Section Heading */}
             {featureControls.latestPostsSection && (

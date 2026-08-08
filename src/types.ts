@@ -197,8 +197,6 @@ export interface WebsiteSettings {
 export interface CloudinarySettings {
   cloudName: string;
   uploadPreset: string;
-  apiKey: string;
-  apiSecret?: string;
   folder: string;
 }
 

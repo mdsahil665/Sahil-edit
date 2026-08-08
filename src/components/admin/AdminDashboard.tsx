@@ -2037,21 +2037,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-zinc-400 mb-1">
-                    Cloudinary API Key (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={cloudinarySettings.apiKey}
-                    onChange={(e) =>
-                      setCloudinarySettings({ ...cloudinarySettings, apiKey: e.target.value })
-                    }
-                    placeholder="Optional API key"
-                    className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white font-mono"
-                  />
-                </div>
-
                 <div className="pt-2 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-[11px] text-zinc-400 space-y-1">
                   <p className="font-bold text-white flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -2610,21 +2595,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   setCloudinarySettings({ ...cloudinarySettings, uploadPreset: e.target.value })
                 }
                 placeholder="e.g., ml_default"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold uppercase text-zinc-400 mb-1">
-                API Key (Optional)
-              </label>
-              <input
-                type="text"
-                value={cloudinarySettings.apiKey}
-                onChange={(e) =>
-                  setCloudinarySettings({ ...cloudinarySettings, apiKey: e.target.value })
-                }
-                placeholder="Optional API Key"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white font-mono"
               />
             </div>

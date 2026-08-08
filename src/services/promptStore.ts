@@ -88,7 +88,6 @@ const DEFAULT_WEBSITE_SETTINGS: WebsiteSettings = {
 const DEFAULT_CLOUDINARY_SETTINGS: CloudinarySettings = {
   cloudName: 'dju83ksjw',
   uploadPreset: 'sahil_edits_preset',
-  apiKey: '',
   folder: 'site_logos',
 };
 
@@ -581,48 +580,9 @@ class PromptStore {
     return updatedPost;
   }
 
-  private async deleteFromCloudinary(imageUrl: string): Promise<void> {
-    try {
-      if (!imageUrl || !imageUrl.includes('cloudinary.com')) return;
-      const { cloudName, apiKey, apiSecret } = this.cloudinarySettingsCache;
-      if (!cloudName) return;
-
-      const parts = imageUrl.split('/upload/');
-      if (parts.length < 2) return;
-
-      let pathAfterUpload = parts[1];
-      pathAfterUpload = pathAfterUpload.replace(/^v\d+\//, '');
-      const lastDot = pathAfterUpload.lastIndexOf('.');
-      const publicId = lastDot !== -1 ? pathAfterUpload.substring(0, lastDot) : pathAfterUpload;
-
-      if (apiKey && apiSecret) {
-        const timestamp = Math.floor(Date.now() / 1000);
-        const strToSign = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
-
-        const encoder = new TextEncoder();
-        const data = encoder.encode(strToSign);
-        const hashBuffer = await crypto.subtle.digest('SHA-1', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const signature = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-
-        const formData = new FormData();
-        formData.append('public_id', publicId);
-        formData.append('api_key', apiKey);
-        formData.append('timestamp', timestamp.toString());
-        formData.append('signature', signature);
-
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          this.addNotification('Cloudinary Asset Deleted', `Removed image ${publicId} from Cloudinary`, 'cloudinary');
-        }
-      }
-    } catch (e) {
-      console.warn('Cloudinary image deletion attempt failed:', e);
-    }
+  private async deleteFromCloudinary(_imageUrl: string): Promise<void> {
+    // Unsigned client-side Cloudinary API does not perform deletions without server API secret.
+    return;
   }
 
   public async deletePost(id: string): Promise<boolean> {

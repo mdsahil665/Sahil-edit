@@ -11,27 +11,41 @@ export const PromptCard: React.FC<PromptCardProps> = React.memo(({ post, onOpenM
   return (
     <article
       onClick={() => onOpenModal(post)}
-      className="group relative flex flex-col h-full max-w-[380px] w-full mx-auto rounded-[2rem] bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-md hover:shadow-2xl hover:shadow-blue-500/15 hover:border-blue-500/40 dark:hover:border-blue-500/40 transition-all duration-300 overflow-hidden cursor-pointer transform-gpu hover:-translate-y-1.5 backdrop-blur-md"
+      className="group relative flex flex-col h-full w-full mx-auto rounded-[2rem] bg-white/90 dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800/80 shadow-md hover:shadow-2xl hover:shadow-blue-500/20 hover:border-blue-500/40 dark:hover:border-blue-500/40 transition-all duration-300 overflow-hidden cursor-pointer transform-gpu hover:-translate-y-1.5 backdrop-blur-md"
     >
       {/* Ambient Glow Gradient background on hover */}
-      <div className="absolute -inset-px rounded-[2rem] bg-gradient-to-r from-blue-600/0 via-indigo-600/0 to-purple-600/0 group-hover:from-blue-600/20 group-hover:via-indigo-600/20 group-hover:to-purple-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className="absolute -inset-px rounded-[2rem] bg-gradient-to-r from-blue-600/0 via-indigo-600/0 to-purple-600/0 group-hover:from-blue-600/10 group-hover:via-indigo-600/10 group-hover:to-purple-600/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10" />
 
-      {/* 1. Image Container with Glass Overlay */}
-      <div className="relative w-full aspect-[4/3] bg-zinc-100 dark:bg-zinc-950/90 overflow-hidden rounded-t-[2rem] border-b border-zinc-100 dark:border-zinc-800/60 p-2">
+      {/* 1. Image Container with Ambient Background Fill and Uncropped Image */}
+      <div className="relative w-full aspect-[4/3] sm:aspect-[5/4] bg-zinc-950 overflow-hidden rounded-t-[2rem] border-b border-zinc-100 dark:border-zinc-800/60">
+        {/* Ambient blurred backdrop fill to match image tone */}
         <img
           src={post.imageUrl}
-          alt={post.title}
-          loading="lazy"
-          decoding="async"
-          className="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500 ease-out"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src =
-              'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80';
-          }}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 dark:opacity-50 scale-125 select-none pointer-events-none"
         />
 
+        {/* Subtle vignette gradient for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-transparent to-zinc-950/60 pointer-events-none" />
+
+        {/* Uncropped Main Image */}
+        <div className="relative w-full h-full p-2.5 flex items-center justify-center z-0">
+          <img
+            src={post.imageUrl}
+            alt={post.title}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-500 ease-out"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80';
+            }}
+          />
+        </div>
+
         {/* Top Badges */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 pointer-events-none">
+        <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-2 pointer-events-none z-10">
           {post.tags && post.tags.length > 0 ? (
             <span className="px-2.5 py-1 rounded-full bg-zinc-950/80 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase border border-white/20 shadow-md">
               #{post.tags[0]}
@@ -43,7 +57,7 @@ export const PromptCard: React.FC<PromptCardProps> = React.memo(({ post, onOpenM
             </span>
           )}
 
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-950/75 backdrop-blur-md text-zinc-300 text-[10px] font-bold border border-white/10 shadow-md">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-950/80 backdrop-blur-md text-zinc-300 text-[10px] font-bold border border-white/10 shadow-md">
             <Eye className="w-3 h-3 text-blue-400" />
             <span>{post.views || 0}</span>
           </div>
@@ -66,7 +80,7 @@ export const PromptCard: React.FC<PromptCardProps> = React.memo(({ post, onOpenM
 
         {/* Card Footer Action */}
         <div className="flex items-center justify-between pt-3 border-t border-zinc-100 dark:border-zinc-800/60 mt-auto">
-          <div className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
             <Copy className="w-3.5 h-3.5 text-zinc-400" />
             <span>{post.copies || 0} copies</span>
           </div>
