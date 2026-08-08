@@ -166,7 +166,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-zinc-950/80 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-zinc-950/85 backdrop-blur-sm">
         {/* Backdrop click */}
         <motion.div
           initial={{ opacity: 0 }}

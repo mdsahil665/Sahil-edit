@@ -4,7 +4,6 @@ import {
   Instagram,
   Facebook,
   Github,
-  Youtube,
   ArrowUp,
   Zap,
   ShieldCheck,
@@ -17,7 +16,6 @@ import {
   Info,
   Lock,
 } from 'lucide-react';
-import { motion } from 'motion/react';
 import { CustomPage } from '../types';
 import { promptStore } from '../services/promptStore';
 import { AdBanner } from './AdBanner';
@@ -85,7 +83,7 @@ const formatSocialUrl = (url?: string, platform?: string, fallbackHandle?: strin
   return `https://${trimmed}`;
 };
 
-export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
+export const Footer: React.FC<FooterProps> = React.memo(({ onOpenPage }) => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const { showToast } = useToast();
 
@@ -110,7 +108,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Function to find existing page or construct a clean system page for Privacy / Terms / Contact / About
+  // Helper function to open or create system page
   const openOrCreatePage = (title: string, slug: string, defaultContent: string) => {
     const existing = publishedPages.find(
       (p) => p.slug === slug || p.title.toLowerCase() === title.toLowerCase()
@@ -131,7 +129,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
     }
   };
 
-  // Social items list (Instagram, Facebook, Telegram, Discord, GitHub, X (Twitter))
+  // Social items list
   const socialItems = [
     {
       id: 'instagram',
@@ -254,107 +252,107 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
     }
   });
 
+  const hasStickyBanner = monetizationSettings.enabled && monetizationSettings.positions.stickyBottomBanner;
+
   return (
-    <motion.footer
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-      className="relative bg-gradient-to-b from-[#0F172A] via-[#0F172A] to-[#111827] text-slate-100 rounded-t-[32px] sm:rounded-t-[40px] shadow-2xl border-t border-white/10 pt-14 pb-10 sm:pb-12 transition-colors duration-300 overflow-hidden"
+    <footer
+      aria-label="Site Footer"
+      style={{ minHeight: 'auto' }}
+      className={`w-full bg-[#0F172A] bg-gradient-to-b from-[#0F172A] via-[#0F172A] to-[#111827] text-slate-100 rounded-t-[32px] sm:rounded-t-[40px] shadow-2xl border-t border-white/10 pt-12 ${
+        hasStickyBanner ? 'pb-24 sm:pb-16' : 'pb-12'
+      } relative overflow-hidden transition-colors duration-300`}
     >
       {/* Top Stylish Gradient Glow Accent Line */}
       <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-blue-500 via-indigo-500 via-purple-500 to-transparent opacity-80" />
 
-      {/* Ambient Soft Radial Background Glows */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-10 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* Ambient Soft Background Glows */}
+      <div className="absolute top-0 left-1/4 w-72 h-72 sm:w-80 sm:h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-10 right-1/4 w-72 h-72 sm:w-80 sm:h-80 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12 sm:space-y-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col gap-10 sm:gap-12">
         {/* Optional Footer Ad Banner */}
         <AdBanner position="footerBanner" settings={monetizationSettings} />
 
-        {/* TOP SECTION: Brand Header & Badges */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 pb-8 border-b border-white/10">
-          <div className="space-y-4 max-w-2xl">
-            {/* Brand Logo & Name */}
+        {/* 1. TOP BRAND SECTION */}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 sm:gap-8 pb-8 border-b border-white/10">
+          <div className="flex flex-col gap-3.5 max-w-2xl w-full">
+            {/* Brand Logo & Title */}
             <div className="flex items-center gap-3.5">
-              <div className="relative group">
-                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 opacity-70 blur group-hover:opacity-100 transition duration-300" />
-                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl border border-white/20">
-                  <Sparkles className="w-6 h-6 animate-pulse" />
+              <div className="relative shrink-0">
+                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 opacity-70 blur" />
+                <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl border border-white/20">
+                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
                 </div>
               </div>
               <div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-                  <span>{websiteSettings.websiteName || 'Sahil Edits'}</span>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-white">
+                  {websiteSettings.websiteName || 'Sahil Edits'}
                 </h2>
-                <p className="text-xs font-bold tracking-widest text-blue-400 uppercase">
+                <p className="text-[11px] sm:text-xs font-bold tracking-widest text-blue-400 uppercase">
                   {websiteSettings.tagline || 'Premium AI Prompt Library'}
                 </p>
               </div>
             </div>
 
-            <p className="text-sm text-slate-300 leading-relaxed font-normal">
+            {/* Description */}
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
               Discover, copy, and master top-tier AI prompts for Gemini, ChatGPT, Midjourney, Bing &amp; more.
               Engineered for creators, developers, and digital innovators.
             </p>
 
             {/* Glowing Badges */}
-            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               {glowingBadges.map((badge) => {
                 const IconComp = badge.icon;
                 return (
                   <span
                     key={badge.label}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r ${badge.colorClass} border backdrop-blur-md shadow-lg shadow-black/20 hover:scale-105 transition-transform cursor-default`}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold bg-gradient-to-r ${badge.colorClass} border shadow-sm hover:scale-105 transition-transform cursor-default`}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-white/90" />
-                    <IconComp className="w-3.5 h-3.5 opacity-80" />
-                    <span>{badge.label}</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-white/90 shrink-0" />
+                    <IconComp className="w-3.5 h-3.5 opacity-80 shrink-0" />
+                    <span className="whitespace-nowrap">{badge.label}</span>
                   </span>
                 );
               })}
             </div>
           </div>
 
-          {/* Back to Top Floating Circular Button */}
-          <div className="self-end lg:self-center shrink-0">
+          {/* Inline Back To Top Button */}
+          <div className="self-start lg:self-center shrink-0">
             <button
               onClick={scrollToTop}
-              aria-label="Back to top"
-              title="Back to top"
-              className="group flex items-center gap-3 px-5 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-blue-500/50 backdrop-blur-xl text-white font-semibold text-xs transition-all duration-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:-translate-y-1"
+              aria-label="Scroll back to top"
+              className="group flex items-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/10 hover:border-blue-500/50 text-white font-semibold text-xs transition-all duration-300 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:-translate-y-0.5 cursor-pointer"
             >
               <span>Back to Top</span>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:-rotate-6 transition-transform">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:-rotate-6 transition-transform">
                 <ArrowUp className="w-4 h-4 group-hover:-translate-y-0.5 transition-transform" />
               </div>
             </button>
           </div>
         </div>
 
-        {/* MIDDLE SECTION: Newsletter, Quick Links, Social Icons */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-start">
+        {/* 2. MAIN GRID (Quick Links, Newsletter, Social Icons) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           {/* Quick Links Section (2-Column Grid of Glass Cards) - 6 cols */}
-          <div className="lg:col-span-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <Layers className="w-4 h-4 text-blue-400" />
-                <span>Quick Navigation</span>
-              </h3>
-            </div>
+          <div className="lg:col-span-6 flex flex-col gap-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <Layers className="w-4 h-4 text-blue-400" />
+              <span>Quick Navigation</span>
+            </h3>
 
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
               {quickLinksList.slice(0, 8).map((link) => {
                 const IconComponent = link.icon;
                 return (
                   <button
                     key={link.title}
                     onClick={link.onClick}
-                    className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.03] hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/50 backdrop-blur-md flex items-center gap-3 text-xs font-semibold text-slate-200 hover:text-white transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] text-left"
+                    className="group p-3 sm:p-3.5 rounded-2xl bg-white/[0.05] hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/50 flex items-center gap-2.5 sm:gap-3 text-[11px] sm:text-xs font-semibold text-slate-200 hover:text-white transition-all duration-200 hover:-translate-y-0.5 text-left cursor-pointer"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-white/[0.06] group-hover:bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 transition-colors">
-                      <IconComponent className="w-4 h-4" />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-white/[0.08] group-hover:bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 transition-colors">
+                      <IconComponent className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </div>
                     <span className="truncate">{link.title}</span>
                   </button>
@@ -363,24 +361,24 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
             </div>
           </div>
 
-          {/* Social Icons & Info Section - 6 cols */}
-          <div className="lg:col-span-6 space-y-6">
+          {/* Right Column: Newsletter & Social Section - 6 cols */}
+          <div className="lg:col-span-6 flex flex-col gap-6">
             {/* Newsletter Subscription Card */}
-            <div className="p-6 sm:p-7 rounded-3xl bg-white/[0.03] backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden group">
-              <div className="absolute -right-12 -bottom-12 w-44 h-44 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all pointer-events-none" />
+            <div className="p-5 sm:p-7 rounded-3xl bg-slate-900/80 border border-white/10 shadow-xl relative overflow-hidden group">
+              <div className="absolute -right-10 -bottom-10 w-36 h-36 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-all pointer-events-none" />
 
-              <div className="relative z-10 space-y-4">
-                <div className="space-y-1">
-                  <h4 className="text-base font-bold text-white flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-blue-400" />
+              <div className="relative z-10 flex flex-col gap-3.5">
+                <div className="flex flex-col gap-1">
+                  <h4 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-blue-400 shrink-0" />
                     <span>Join Our Prompt Newsletter</span>
                   </h4>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-400 leading-normal">
                     Get weekly high-converting AI prompts and editing tips delivered straight to your inbox.
                   </p>
                 </div>
 
-                <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row items-center gap-2.5">
+                <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 mt-1">
                   <div className="relative w-full">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
@@ -389,12 +387,12 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
                       value={newsletterEmail}
                       onChange={(e) => setNewsletterEmail(e.target.value)}
                       placeholder="Enter your email address..."
-                      className="w-full pl-10 pr-4 py-3 rounded-2xl bg-white/[0.06] border border-white/15 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 text-xs text-white placeholder-slate-400 focus:outline-none backdrop-blur-md transition-all"
+                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-2xl bg-slate-800/80 border border-white/15 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
                     />
                   </div>
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0"
+                    className="w-full sm:w-auto px-6 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                   >
                     <span>Subscribe</span>
                     <ArrowRight className="w-4 h-4" />
@@ -403,13 +401,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
               </div>
             </div>
 
-            {/* Social Media Section (Modern Circular Glass Icons) */}
-            <div className="space-y-3">
+            {/* Social Media Section (Directly below Newsletter) */}
+            <div className="flex flex-col gap-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Connect With Us
               </h3>
 
-              <div className="flex items-center flex-wrap gap-3">
+              <div className="flex items-center flex-wrap gap-2.5 sm:gap-3">
                 {socialItems.map((item) => (
                   <a
                     key={item.id}
@@ -418,7 +416,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
                     rel="noopener noreferrer"
                     aria-label={item.label}
                     title={item.label}
-                    className="w-11 h-11 rounded-full bg-white/[0.05] backdrop-blur-md border border-white/10 text-slate-300 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-6 hover:text-blue-400 hover:border-blue-400/60 hover:bg-blue-500/10 hover:shadow-[0_0_18px_rgba(59,130,246,0.5)]"
+                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/[0.08] border border-white/10 text-slate-300 flex items-center justify-center transition-all duration-200 hover:scale-110 hover:text-blue-400 hover:border-blue-400/60 hover:bg-blue-500/10 cursor-pointer"
                   >
                     {item.icon}
                   </a>
@@ -428,14 +426,14 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
           </div>
         </div>
 
-        {/* BOTTOM BAR: Thin Divider, Copyright, Policy Links */}
-        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
-          {/* Left Copyright */}
+        {/* 3. BOTTOM BAR (Divider, Copyright, Policy Links) */}
+        <div className="pt-6 sm:pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-medium">
+          {/* Copyright */}
           <div className="text-center sm:text-left">
             {footerText}
           </div>
 
-          {/* Right Policy Links */}
+          {/* Policy Links */}
           <div className="flex items-center gap-3 text-slate-300">
             <button
               onClick={() =>
@@ -445,7 +443,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
                   '## Privacy Policy\n\nYour privacy is important to us. Sahil Edits does not sell or share personal user data. All prompt copying and interactions are encrypted and secured.'
                 )
               }
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-blue-400 transition-colors cursor-pointer"
             >
               Privacy
             </button>
@@ -458,7 +456,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
                   '## Terms of Service\n\nWelcome to Sahil Edits. By accessing our platform, you agree to use our AI prompt templates ethically and responsibly.'
                 )
               }
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-blue-400 transition-colors cursor-pointer"
             >
               Terms
             </button>
@@ -471,13 +469,15 @@ export const Footer: React.FC<FooterProps> = ({ onOpenPage }) => {
                   '## Contact Us\n\nHave questions or custom prompt requests? Reach out to us at support@sahiledits.com or connect via our social channels.'
                 )
               }
-              className="hover:text-blue-400 transition-colors"
+              className="hover:text-blue-400 transition-colors cursor-pointer"
             >
               Contact
             </button>
           </div>
         </div>
       </div>
-    </motion.footer>
+    </footer>
   );
-};
+});
+
+Footer.displayName = 'Footer';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider, useToast } from './components/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -122,26 +122,37 @@ function AppContent() {
   // Reset infinite scroll count when search or category filter changes
   useEffect(() => {
     setVisibleCount(6);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [searchQuery, selectedCategory]);
 
+  // Scroll to top only when selecting a category
+  useEffect(() => {
+    if (selectedCategory) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [selectedCategory]);
+
   // Published posts sorted newest first
-  const publishedPosts = posts
-    .filter((p) => p.status === 'published')
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const publishedPosts = useMemo(() => {
+    return posts
+      .filter((p) => p.status === 'published')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [posts]);
 
   // Filtered Posts based on Search & Category
-  const filteredPosts = publishedPosts.filter((post) => {
-    const matchesCategory = selectedCategory ? post.categoryId === selectedCategory : true;
-    const matchesSearch =
-      searchQuery.trim() === '' ||
-      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.fullPrompt.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (post.tags && post.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
+  const filteredPosts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return publishedPosts.filter((post) => {
+      const matchesCategory = selectedCategory ? post.categoryId === selectedCategory : true;
+      const matchesSearch =
+        query === '' ||
+        post.title.toLowerCase().includes(query) ||
+        post.fullPrompt.toLowerCase().includes(query) ||
+        post.shortDescription.toLowerCase().includes(query) ||
+        (post.tags && post.tags.some((t) => t.toLowerCase().includes(query)));
 
-    return matchesCategory && matchesSearch;
-  });
+      return matchesCategory && matchesSearch;
+    });
+  }, [publishedPosts, selectedCategory, searchQuery]);
 
   // Infinite scroll trigger
   useEffect(() => {
@@ -163,19 +174,19 @@ function AppContent() {
     };
   }, [filteredPosts.length]);
 
-  const visiblePosts = filteredPosts.slice(0, visibleCount);
+  const visiblePosts = useMemo(() => filteredPosts.slice(0, visibleCount), [filteredPosts, visibleCount]);
   const hasMore = visibleCount < filteredPosts.length;
 
   const stats = promptStore.getAdminStats();
 
-  const handleOpenPromptModal = (post: PromptPost) => {
+  const handleOpenPromptModal = useCallback((post: PromptPost) => {
     promptStore.incrementViews(post.id);
     setActivePromptModal(post);
-  };
+  }, []);
 
-  const handleCopyPrompt = (post: PromptPost) => {
+  const handleCopyPrompt = useCallback((post: PromptPost) => {
     promptStore.incrementCopies(post.id);
-  };
+  }, []);
 
   const handleSavePost = (postData: Omit<PromptPost, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'copies'>) => {
     if (editingPostModal === 'new') {
@@ -294,7 +305,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 font-sans selection:bg-blue-500/20 selection:text-blue-500">
+    <div className="min-h-screen flex flex-col justify-between bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors duration-300 font-sans selection:bg-blue-500/20 selection:text-blue-500">
       {/* Top Banner Ad Position */}
       <div className="max-w-4xl mx-auto px-4 pt-3">
         <AdBanner position="topBanner" settings={monetizationSettings} />
@@ -495,7 +506,11 @@ function AppContent() {
               exit={{ opacity: 0, scale: 0.8, y: 10 }}
               onClick={scrollToTop}
               aria-label="Back to Top"
-              className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 p-3.5 rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-xl hover:scale-110 active:scale-95 transition-transform duration-200 flex items-center justify-center cursor-pointer"
+              className={`fixed ${
+                monetizationSettings.enabled && monetizationSettings.positions.stickyBottomBanner
+                  ? 'bottom-20 sm:bottom-20'
+                  : 'bottom-6 sm:bottom-8'
+              } right-5 sm:right-8 z-40 p-3.5 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white shadow-2xl hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center cursor-pointer border border-white/20 backdrop-blur-md`}
             >
               <ArrowUp className="w-5 h-5" />
             </motion.button>
