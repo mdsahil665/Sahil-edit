@@ -3,6 +3,7 @@ import { Mail, Lock, ArrowRight, X, LogIn, UserPlus, Sparkles, AlertCircle, Eye,
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth, ADMIN_EMAIL } from '../context/AuthContext';
 import { useToast } from './Toast';
+import { useLogo } from '../context/LogoContext';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   const { currentUser, loginWithEmail, registerWithEmail, loginWithGoogle } = useAuth();
   const { showToast } = useToast();
+  const { logoUrl } = useLogo();
 
   useEffect(() => {
     if (currentUser && isOpen) {
@@ -131,8 +133,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {/* Top Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-                <Sparkles className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 text-white flex items-center justify-center shadow-md shadow-blue-500/20 overflow-hidden p-0.5">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Login Modal Logo" className="w-full h-full object-cover rounded-xl" />
+                ) : (
+                  <Sparkles className="w-5 h-5" />
+                )}
               </div>
               <div>
                 <h3 className="font-bold text-lg text-zinc-900 dark:text-white">

@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
-import { User, Mail, ShieldCheck, Heart, LogOut, X, Copy, Check, Sparkles } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { User, Mail, ShieldCheck, Heart, LogOut, X, Copy, Check, Sparkles, Camera, Loader2, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { promptStore } from '../services/promptStore';
 import { PromptPost } from '../types';
 import { useToast } from './Toast';
+import { compressImage, uploadUserProfilePhoto } from '../services/storageService';
+import { updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -22,8 +26,39 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const { currentUser, isAdmin, favorites, logout, toggleFavorite } = useAuth();
   const { showToast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
+  const avatarInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!isOpen) return null;
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('File Too Large', 'Profile photo must be less than 5MB.', 'error');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const compressedBlob = await compressImage(file, 400, 400, 0.9);
+      const photoUrl = await uploadUserProfilePhoto(currentUser.uid, compressedBlob, file.name);
+
+      // Update Firebase Auth user profile
+      await updateProfile(currentUser, { photoURL: photoUrl });
+
+      // Save URL to users/{uid} document in Firestore
+      await setDoc(doc(db, 'users', currentUser.uid), { photoURL: photoUrl, updatedAt: new Date().toISOString() }, { merge: true });
+
+      showToast('Profile Photo Updated!', 'Your new avatar is saved.', 'success');
+    } catch (err: any) {
+      console.error('Error uploading profile photo:', err);
+      showToast('Photo Upload Failed', err?.message || 'Could not update profile photo.', 'error');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const allPosts = promptStore.getPosts();
   const favoritePosts = allPosts.filter((p) => favorites.includes(p.id));
@@ -63,19 +98,39 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-lg font-bold shadow-md shadow-blue-500/20">
-                {currentUser?.photoURL ? (
+              <div
+                onClick={() => !uploadingPhoto && avatarInputRef.current?.click()}
+                className="relative group cursor-pointer w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-lg font-bold shadow-md shadow-blue-500/20 overflow-hidden border border-white/20"
+                title="Click to upload profile photo"
+              >
+                <input
+                  type="file"
+                  ref={avatarInputRef}
+                  onChange={handleAvatarChange}
+                  accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                  className="hidden"
+                />
+
+                {uploadingPhoto ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-white" />
+                ) : currentUser?.photoURL ? (
                   <img
                     src={currentUser.photoURL}
                     alt="Avatar"
-                    className="w-full h-full rounded-2xl object-cover"
+                    className="w-full h-full object-cover rounded-2xl group-hover:opacity-75 transition-opacity"
                   />
                 ) : (
                   <span>
                     {(currentUser?.displayName || currentUser?.email || 'U').charAt(0).toUpperCase()}
                   </span>
                 )}
+
+                {/* Overlay Camera Badge */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Camera className="w-5 h-5 text-white" />
+                </div>
               </div>
+
               <div>
                 <h3 className="font-bold text-base text-zinc-900 dark:text-white flex items-center gap-2">
                   <span>{currentUser?.displayName || currentUser?.email?.split('@')[0] || 'User Profile'}</span>

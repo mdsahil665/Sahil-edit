@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider, useToast } from './components/Toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LogoProvider } from './context/LogoContext';
 import { Header } from './components/Header';
 import { PromptCard } from './components/PromptCard';
 import { PromptModal } from './components/PromptModal';
@@ -577,7 +578,9 @@ export default function App() {
     <ThemeProvider>
       <ToastProvider>
         <AuthProvider>
-          <AppContent />
+          <LogoProvider>
+            <AppContent />
+          </LogoProvider>
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>

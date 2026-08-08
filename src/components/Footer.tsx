@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { CustomPage } from '../types';
 import { promptStore } from '../services/promptStore';
+import { useLogo } from '../context/LogoContext';
 import { AdBanner } from './AdBanner';
 import { useToast } from './Toast';
 
@@ -86,6 +87,7 @@ const formatSocialUrl = (url?: string, platform?: string, fallbackHandle?: strin
 export const Footer: React.FC<FooterProps> = React.memo(({ onOpenPage }) => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const { showToast } = useToast();
+  const { logoUrl } = useLogo();
 
   const publishedPages = promptStore.getPages().filter((p) => p.status === 'published');
   const monetizationSettings = promptStore.getMonetization();
@@ -280,8 +282,12 @@ export const Footer: React.FC<FooterProps> = React.memo(({ onOpenPage }) => {
             <div className="flex items-center gap-3.5">
               <div className="relative shrink-0">
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 opacity-70 blur" />
-                <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl border border-white/20">
-                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
+                <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-xl border border-white/20 overflow-hidden p-0.5">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Footer Logo" className="w-full h-full object-cover rounded-xl" />
+                  ) : (
+                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
+                  )}
                 </div>
               </div>
               <div>

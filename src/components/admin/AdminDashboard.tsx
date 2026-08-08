@@ -60,6 +60,7 @@ import { promptStore } from '../../services/promptStore';
 import { useToast } from '../Toast';
 import { DeploymentGuide } from './DeploymentGuide';
 import { FeatureControlCenter } from './FeatureControlCenter';
+import { LogoManager } from './LogoManager';
 import { useAuth } from '../../context/AuthContext';
 import { testConnection } from '../../lib/firebase';
 
@@ -105,6 +106,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     | 'settings'
     | 'features'
     | 'cloudinary'
+    | 'logo'
     | 'firebase'
     | 'comments'
     | 'deployment'
@@ -623,6 +625,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             <Globe className="w-3.5 h-3.5" />
             <span>SEO</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('logo')}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'logo'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
+            <span>Logo Manager</span>
           </button>
 
           <button
@@ -2816,6 +2830,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* TAB: LOGO MANAGER */}
+      {activeTab === 'logo' && <LogoManager />}
 
       {/* TAB: DEPLOYMENT GUIDE */}
       {activeTab === 'deployment' && (

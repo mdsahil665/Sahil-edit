@@ -4,6 +4,7 @@ import { Category } from '../types';
 import { CategoryIcon } from './CategoryIcon';
 import { useAuth } from '../context/AuthContext';
 import { promptStore } from '../services/promptStore';
+import { useLogo } from '../context/LogoContext';
 import {
   Search,
   Sun,
@@ -63,6 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const fc = promptStore.getFeatureControls();
+  const { logoUrl } = useLogo();
 
   return (
     <>
@@ -80,8 +82,12 @@ export const Header: React.FC<HeaderProps> = ({
               className="flex items-center gap-3 cursor-pointer group shrink-0"
               onClick={onNavigateHome}
             >
-              <div className="w-10 sm:w-11 h-10 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200">
-                <Sparkles className="w-5 sm:w-6 h-5 sm:h-6" />
+              <div className="w-10 sm:w-11 h-10 sm:h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-blue-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200 overflow-hidden p-0.5">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Website Logo" className="w-full h-full object-cover rounded-xl" />
+                ) : (
+                  <Sparkles className="w-5 sm:w-6 h-5 sm:h-6" />
+                )}
               </div>
               <div>
                 <span className="text-xl sm:text-2xl font-black tracking-tight text-zinc-900 dark:text-white font-sans">
